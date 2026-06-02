@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Property } from './entities/property.entity';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -17,11 +17,11 @@ export class PropertiesService {
   }
 
   async findAll(tenantId: string): Promise<Property[]> {
-    return this.repo.find({ where: { tenantId, deletedAt: null } });
+    return this.repo.find({ where: { tenantId, deletedAt: IsNull() } });
   }
 
   async findOne(tenantId: string, id: string): Promise<Property> {
-    const property = await this.repo.findOne({ where: { id, tenantId, deletedAt: null } });
+    const property = await this.repo.findOne({ where: { id, tenantId, deletedAt: IsNull() } });
     if (!property) throw new NotFoundException('Property not found');
     return property;
   }

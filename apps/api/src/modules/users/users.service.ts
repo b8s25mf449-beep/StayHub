@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, IsNull } from 'typeorm';
 import { User, UserStatus } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -40,11 +40,11 @@ export class UsersService {
   }
 
   async findAll(tenantId: string): Promise<User[]> {
-    return this.userRepo.find({ where: { tenantId, deletedAt: null } });
+    return this.userRepo.find({ where: { tenantId, deletedAt: IsNull() } });
   }
 
   async findOne(tenantId: string, id: string): Promise<User> {
-    const user = await this.userRepo.findOne({ where: { id, tenantId, deletedAt: null } });
+    const user = await this.userRepo.findOne({ where: { id, tenantId, deletedAt: IsNull() } });
     if (!user) throw new NotFoundException('User not found');
     return user;
   }

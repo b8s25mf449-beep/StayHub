@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
+import { Repository, IsNull } from 'typeorm';
+import { randomUUID } from 'crypto';
 import { Reservation, ReservationStatus } from './entities/reservation.entity';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
@@ -13,7 +13,7 @@ export class ReservationsService {
   ) {}
 
   private generateConfirmationNumber(): string {
-    return `SH-${Date.now().toString(36).toUpperCase()}-${uuidv4().split('-')[0].toUpperCase()}`;
+    return `SH-${Date.now().toString(36).toUpperCase()}-${randomUUID().split('-')[0].toUpperCase()}`;
   }
 
   async checkAvailability(roomId: string, checkInDate: string, checkOutDate: string, excludeId?: string): Promise<void> {
@@ -44,13 +44,13 @@ export class ReservationsService {
 
   async findAll(tenantId: string): Promise<Reservation[]> {
     return this.repo.find({
-      where: { tenantId, deletedAt: null },
+      where: { tenantId, deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
     });
   }
 
   async findOne(tenantId: string, id: string): Promise<Reservation> {
-    const r = await this.repo.findOne({ where: { id, tenantId, deletedAt: null } });
+    const r = await this.repo.findOne({ where: { id, tenantId, deletedAt: IsNull() } });
     if (!r) throw new NotFoundException('Reservation not found');
     return r;
   }

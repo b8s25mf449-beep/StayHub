@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
@@ -17,13 +17,13 @@ export class PaymentsService {
   }
 
   async findAll(tenantId: string, reservationId?: string): Promise<Payment[]> {
-    const where: any = { tenantId, deletedAt: null };
+    const where: any = { tenantId, deletedAt: IsNull() };
     if (reservationId) where.reservationId = reservationId;
     return this.repo.find({ where, order: { createdAt: 'DESC' } });
   }
 
   async findOne(tenantId: string, id: string): Promise<Payment> {
-    const payment = await this.repo.findOne({ where: { id, tenantId, deletedAt: null } });
+    const payment = await this.repo.findOne({ where: { id, tenantId, deletedAt: IsNull() } });
     if (!payment) throw new NotFoundException('Payment not found');
     return payment;
   }

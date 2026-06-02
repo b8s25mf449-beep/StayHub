@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository, ILike, IsNull } from 'typeorm';
 import { Guest } from './entities/guest.entity';
 import { CreateGuestDto } from './dto/create-guest.dto';
 import { UpdateGuestDto } from './dto/update-guest.dto';
@@ -26,17 +26,17 @@ export class GuestsService {
     if (search) {
       return this.repo.find({
         where: [
-          { tenantId, firstName: ILike(`%${search}%`), deletedAt: null },
-          { tenantId, lastName: ILike(`%${search}%`), deletedAt: null },
-          { tenantId, email: ILike(`%${search}%`), deletedAt: null },
+          { tenantId, firstName: ILike(`%${search}%`), deletedAt: IsNull() },
+          { tenantId, lastName: ILike(`%${search}%`), deletedAt: IsNull() },
+          { tenantId, email: ILike(`%${search}%`), deletedAt: IsNull() },
         ],
       });
     }
-    return this.repo.find({ where: { tenantId, deletedAt: null } });
+    return this.repo.find({ where: { tenantId, deletedAt: IsNull() } });
   }
 
   async findOne(tenantId: string, id: string): Promise<Guest> {
-    const guest = await this.repo.findOne({ where: { id, tenantId, deletedAt: null } });
+    const guest = await this.repo.findOne({ where: { id, tenantId, deletedAt: IsNull() } });
     if (!guest) throw new NotFoundException('Guest not found');
     return guest;
   }

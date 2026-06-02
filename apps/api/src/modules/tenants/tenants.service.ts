@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Tenant } from './entities/tenant.entity';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
@@ -20,11 +20,11 @@ export class TenantsService {
   }
 
   async findAll(): Promise<Tenant[]> {
-    return this.repo.find({ where: { deletedAt: null } });
+    return this.repo.find({ where: { deletedAt: IsNull() } });
   }
 
   async findOne(id: string): Promise<Tenant> {
-    const tenant = await this.repo.findOne({ where: { id, deletedAt: null } });
+    const tenant = await this.repo.findOne({ where: { id, deletedAt: IsNull() } });
     if (!tenant) throw new NotFoundException('Tenant not found');
     return tenant;
   }

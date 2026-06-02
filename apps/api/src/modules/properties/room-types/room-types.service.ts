@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { RoomType } from '../entities/room-type.entity';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
@@ -17,13 +17,13 @@ export class RoomTypesService {
   }
 
   async findAll(tenantId: string, propertyId?: string): Promise<RoomType[]> {
-    const where: any = { tenantId, deletedAt: null };
+    const where: any = { tenantId, deletedAt: IsNull() };
     if (propertyId) where.propertyId = propertyId;
     return this.repo.find({ where });
   }
 
   async findOne(tenantId: string, id: string): Promise<RoomType> {
-    const rt = await this.repo.findOne({ where: { id, tenantId, deletedAt: null } });
+    const rt = await this.repo.findOne({ where: { id, tenantId, deletedAt: IsNull() } });
     if (!rt) throw new NotFoundException('Room type not found');
     return rt;
   }
