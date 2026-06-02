@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { createHash, randomBytes } from 'crypto';
 import { RefreshToken } from '../entities/refresh-token.entity';
 
@@ -87,14 +87,14 @@ export class RefreshTokenService {
 
   async revokeFamily(userId: string, tenantId: string): Promise<void> {
     await this.refreshTokenRepo.update(
-      { userId, tenantId, revokedAt: undefined },
+      { userId, tenantId, revokedAt: IsNull() },
       { revokedAt: new Date() },
     );
   }
 
   private async enforceDeviceLimit(userId: string, tenantId: string): Promise<void> {
     const active = await this.refreshTokenRepo.find({
-      where: { userId, tenantId, revokedAt: undefined },
+      where: { userId, tenantId, revokedAt: IsNull() },
       order: { createdAt: 'ASC' },
     });
 
