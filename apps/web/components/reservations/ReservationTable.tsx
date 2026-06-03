@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import { formatDate, formatPrice, STATUS_LABELS, STATUS_COLORS, todayISO } from '@/lib/utils';

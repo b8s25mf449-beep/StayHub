@@ -40,8 +40,10 @@ export function todayISO(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-export function cn(...classes: (string | undefined | null | false)[]): string {
-  return classes.filter(Boolean).join(' ');
+// Accepts any type — non-string values (e.g. base-ui render-prop classNames) are silently ignored
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function cn(...classes: any[]): string {
+  return classes.filter((c) => typeof c === 'string').join(' ');
 }
 
 export const STATUS_LABELS: Record<string, string> = {
