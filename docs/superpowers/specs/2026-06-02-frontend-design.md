@@ -137,12 +137,7 @@ Below: revenue line chart (last 30 days) + table of last 5 reservations + upcomi
 3. Room selector (shows available rooms for selected dates)
 4. Check-in date / Check-out date (date pickers)
 5. Adults + children count
-6. Extras (fixed list, always shown as checkboxes):
-   - Desayuno · configurable price per night
-   - Estacionamiento · configurable flat price
-   - Traslado aeropuerto · configurable flat price
-   - Late checkout · configurable flat price
-   - Early check-in · configurable flat price
+6. **¿Requiere factura?** toggle (OFF by default)
 7. Notes (optional textarea)
 
 **Right panel — live quotation:**
@@ -151,13 +146,15 @@ Updates on every field change:
 Habitación Doble (204)          3 noches
 ─────────────────────────────────────────
 $120/noche × 3 noches           $360.00
-Desayuno × 3 noches              $45.00
-Estacionamiento                  $20.00
+
+✓ Desayuno incluido
+✓ Estacionamiento gratuito
 ─────────────────────────────────────────
-Subtotal                        $425.00
-Impuestos (21%)                  $89.25
-─────────────────────────────────────────
-TOTAL                           $514.25
+TOTAL (sin impuestos)           $360.00
+
+── Solo si "Requiere factura" ──
+IVA (21%)                        $75.60
+Total con factura               $435.60
 ```
 - "Descargar cotización PDF" button (client-side, no API call)
 - "Confirmar reserva" button → `POST /api/v1/reservations`
@@ -186,54 +183,69 @@ TOTAL                           $514.25
 
 ## Quotation PDF (Canva template match)
 
-Generated client-side with `@react-pdf/renderer`. Matches the Canva template structure:
+Generated client-side with `@react-pdf/renderer`. Page size: A4 portrait (794×1123px). Background: black (`#000000`). Text: white.
+
+**Exact layout (top to bottom):**
 
 ```
-┌─────────────────────────────────────────┐
-│  📞 987-175-2310                         │
-│  📍 C. 68 439, Centro, 97000 Mérida     │
-│                                          │
-│           HOTEL TRAVERTINO               │
-│              Cotización                  │
-│                                          │
-│  Fecha:   10 - 13 junio 2026            │
-│  Noches:  3                              │
-│  Huésped: María González · 2 adultos    │
-│                                          │
-│  HABITACIÓN      P/NOCHE    TOTAL        │
-│  Doble (204)      $120      $360         │
-│  Desayuno incl.                          │
-│                                          │
-│  Impuestos (21%):           $75.60       │
-│  TOTAL CON IMPUESTOS:      $435.60       │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐  BLACK BG
+│                                              │
+│          HOTEL TRAVERTINO  (small, gray)     │
+│            COTIZACIÓN      (large, bold)     │
+│                                              │
+│  FECHA: 10 - 13 JUNIO 2026   DESAYUNO INCLUIDO    │
+│  NOCHES: 3                   [si factura:]        │
+│  HUÉSPED: M. GONZÁLEZ        IMPUESTOS (21%): $X  │
+│            · 2 ADULTOS       TOTAL C/IMP: $X      │
+│                                              │
+│  ─────────────────────────────────────────  │
+│                  RESERVA                     │
+│  ─────────────────────────────────────────  │
+│                                              │
+│  HABITACIÓN    PRECIO X NOCHE   PRECIO TOTAL│
+│                                              │
+│  DOBLE (HAB. 204)    $120        $360 🟡     │
+│                                              │
+│  (espacio para filas adicionales)            │
+│                                              │
+│                                              │
+│  ─────────────────────────────────────────  │
+│        T R A V E R T I N O  (logo)          │
+│  ─────────────────────────────────────────  │
+│           987-175-2310                       │
+│          @HOTELTRAVERTINO                    │
+│     C. 68 439, CENTRO, 97000 MÉRIDA, YUC.   │
+└─────────────────────────────────────────────┘
 ```
+
+**Color details:**
+- PRECIO TOTAL value: golden/teal accent (`#e8a94a` or teal from brand)
+- Divider lines: white at low opacity
+- Hotel name in header: small gray caps
+- COTIZACIÓN: large bold white
 
 **Data sources:**
-- Hotel name, phone, address → tenant config (hardcoded per tenant in Phase 1, configurable later)
-- Guest name + adults → from form
-- Dates + nights → calculated from form
-- Room + price → from selected room
-- Extras → checked items from fixed list
-- Tax rate → 21% (hardcoded, configurable later)
+- Hotel name, phone, address, social → `GET /v1/tenants/:id`
+- Guest name + adults → from reservation form
+- Dates + nights → calculated from checkIn/checkOut
+- Room type + room number + price/night → from selected room
+- "Desayuno incluido" → always shown (fixed amenity)
+- IVA + total con impuestos → only shown if "Requiere factura" toggle is ON
+- Tax rate → 21% hardcoded (configurable later)
 
 ---
 
-## Extras — Fixed List Configuration
+## Pricing Model
 
-Stored as a constant in the frontend for Phase 1:
+- **Base price** = price WITHOUT taxes (what the hotel charges)
+- **Taxes (21% IVA)** = only shown/applied when guest requests a formal invoice (factura)
+- **Included amenities** = shown as informational badges, not charges (e.g. "Desayuno incluido", "Estacionamiento gratuito")
 
-```typescript
-export const EXTRAS = [
-  { id: 'breakfast',   label: 'Desayuno',            priceType: 'per_night', price: 15 },
-  { id: 'parking',     label: 'Estacionamiento',      priceType: 'flat',      price: 20 },
-  { id: 'transfer',    label: 'Traslado aeropuerto',  priceType: 'flat',      price: 50 },
-  { id: 'late_checkout',  label: 'Late checkout',     priceType: 'flat',      price: 30 },
-  { id: 'early_checkin',  label: 'Early check-in',    priceType: 'flat',      price: 30 },
-];
-```
+The reservation form has a **"¿Requiere factura?"** toggle:
+- OFF → quotation shows base total only
+- ON → quotation shows base total + IVA (21%) + total con impuestos
 
-`per_night` extras multiply by number of nights. `flat` extras are charged once.
+This matches the Canva template exactly: taxes and total-with-taxes appear in the top-right info block only when applicable.
 
 ---
 
