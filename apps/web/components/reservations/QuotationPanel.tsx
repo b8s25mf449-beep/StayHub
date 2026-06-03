@@ -29,25 +29,25 @@ export default function QuotationPanel({ data, tenantName, tenantPhone, tenantAd
     const { pdf } = await import('@react-pdf/renderer');
     const { QuotationDocument } = await import('@/components/pdf/QuotationDocument');
     const React = (await import('react')).default;
-    const blob = await pdf(
-      React.createElement(QuotationDocument, {
-        tenantName,
-        tenantPhone,
-        tenantAddress,
-        guestName: `${data.guest.firstName} ${data.guest.lastName}`,
-        adultsCount: data.adultsCount,
-        checkInDate: data.checkInDate,
-        checkOutDate: data.checkOutDate,
-        nights,
-        roomName: data.roomType?.name ?? '',
-        roomNumber: data.room?.roomNumber ?? '',
-        pricePerNight,
-        subtotal,
-        requiresInvoice: data.requiresInvoice,
-        iva,
-        totalWithTax,
-      })
-    ).toBlob();
+    const element = React.createElement(QuotationDocument, {
+      tenantName,
+      tenantPhone,
+      tenantAddress,
+      guestName: `${data.guest.firstName} ${data.guest.lastName}`,
+      adultsCount: data.adultsCount,
+      checkInDate: data.checkInDate,
+      checkOutDate: data.checkOutDate,
+      nights,
+      roomName: data.roomType?.name ?? '',
+      roomNumber: data.room?.roomNumber ?? '',
+      pricePerNight,
+      subtotal,
+      requiresInvoice: data.requiresInvoice,
+      iva,
+      totalWithTax,
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const blob = await pdf(element as any).toBlob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
