@@ -46,7 +46,7 @@ export class ChannelConnection extends BaseEntity {
   lastSyncCount: number;
 
   @Column({ name: 'last_error', nullable: true })
-  lastError: string;
+  lastError: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
   settings: Record<string, unknown>;

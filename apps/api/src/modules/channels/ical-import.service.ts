@@ -36,6 +36,7 @@ export class ICalImportService {
       const response = await axios.get<string>(connection.icalUrl, {
         timeout: 10000,
         responseType: 'text',
+        maxRedirects: 0,
       });
       icsString = response.data;
     } catch (err: any) {
@@ -75,6 +76,7 @@ export class ICalImportService {
 
       const checkInDate = this.toDateString(start);
       const checkOutDate = this.toDateString(end);
+      const summary = component.summary as string | { val: string; params?: Record<string, string> } | undefined;
 
       try {
         const existing = await this.reservationRepo.findOne({
@@ -90,10 +92,12 @@ export class ICalImportService {
             existing.checkInDate = checkInDate;
             existing.checkOutDate = checkOutDate;
             await this.reservationRepo.save(existing);
+            result.updated++;
+          } else {
+            result.skipped++;
           }
-          result.updated++;
         } else {
-          const { firstName, lastName } = this.parseGuestName(component.summary, connection.channel);
+          const { firstName, lastName } = this.parseGuestName(summary, connection.channel);
           const guest = this.guestRepo.create({
             tenantId: connection.tenantId,
             firstName,
@@ -103,23 +107,28 @@ export class ICalImportService {
           });
           const savedGuest = await this.guestRepo.save(guest);
 
-          const reservation = this.reservationRepo.create({
-            tenantId: connection.tenantId,
-            propertyId: connection.propertyId,
-            roomId: connection.roomId,
-            guestId: savedGuest.id,
-            confirmationNumber: this.generateConfirmationNumber(),
-            channelReservationId: uid,
-            source: this.toReservationSource(connection.channel),
-            status: ReservationStatus.CONFIRMED,
-            checkInDate,
-            checkOutDate,
-            baseAmount: 0,
-            totalAmount: 0,
-            adultsCount: 1,
-          });
-          await this.reservationRepo.save(reservation);
-          result.imported++;
+          try {
+            const reservation = this.reservationRepo.create({
+              tenantId: connection.tenantId,
+              propertyId: connection.propertyId,
+              roomId: connection.roomId,
+              guestId: savedGuest.id,
+              confirmationNumber: this.generateConfirmationNumber(),
+              channelReservationId: uid,
+              source: this.toReservationSource(connection.channel),
+              status: ReservationStatus.CONFIRMED,
+              checkInDate,
+              checkOutDate,
+              baseAmount: 0,
+              totalAmount: 0,
+              adultsCount: 1,
+            });
+            await this.reservationRepo.save(reservation);
+            result.imported++;
+          } catch (reservationErr: any) {
+            await this.guestRepo.softDelete(savedGuest.id);
+            throw reservationErr;
+          }
         }
       } catch (err: any) {
         result.errors.push({ uid, reason: err.message });
@@ -136,15 +145,19 @@ export class ICalImportService {
   }
 
   private toDateString(d: Date): string {
-    return d.toISOString().split('T')[0];
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private parseGuestName(
-    summary: string | undefined,
+    summary: string | { val: string; params?: Record<string, string> } | undefined,
     channel: ChannelType,
   ): { firstName: string; lastName: string } {
-    if (summary) {
-      const parts = summary.trim().split(/\s+/);
+    const raw = summary && typeof summary === 'object' ? summary.val : summary;
+    if (raw) {
+      const parts = raw.trim().split(/\s+/);
       if (parts.length >= 2) return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
       if (parts[0]) return { firstName: parts[0], lastName: this.channelLabel(channel) };
     }

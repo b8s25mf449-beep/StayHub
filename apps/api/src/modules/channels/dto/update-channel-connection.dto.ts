@@ -5,7 +5,7 @@ import { ChannelStatus } from '../entities/channel-connection.entity';
 export class UpdateChannelConnectionDto {
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUrl()
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true, require_tld: true })
   icalUrl?: string;
 
   @ApiPropertyOptional()

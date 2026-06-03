@@ -16,7 +16,7 @@ export class CreateChannelConnectionDto {
   channel: ChannelType;
 
   @ApiProperty({ description: 'iCal feed URL provided by the OTA for this room' })
-  @IsUrl()
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true, require_tld: true })
   icalUrl: string;
 
   @ApiPropertyOptional({ description: 'Room or property ID as it appears in the OTA system' })
