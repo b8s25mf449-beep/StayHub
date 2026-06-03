@@ -10,25 +10,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Design system colors
+        // Design system colors (hardcoded for direct class usage)
         bg: '#080c12',
         surface: '#0d1117',
-        card: {
-          DEFAULT: 'var(--card)',
-          foreground: 'var(--card-foreground)',
-        },
-        border: 'var(--border)',
-        primary: {
-          DEFAULT: 'var(--primary)',
-          foreground: 'var(--primary-foreground)',
-          brand: '#0f766e',
-        },
+        card: '#0f1520',
+        border: '#1a2535',
+        primary: '#0f766e',
         'primary-light': '#14b8a6',
-        muted: {
-          DEFAULT: 'var(--muted)',
-          foreground: 'var(--muted-foreground)',
-          brand: '#4a5a6c',
-        },
+        muted: '#4a5a6c',
         // shadcn/ui CSS variable-based colors
         background: 'var(--background)',
         foreground: 'var(--foreground)',
