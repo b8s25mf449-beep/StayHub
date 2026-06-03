@@ -15,6 +15,7 @@ import { RoomsModule } from './modules/properties/rooms/rooms.module';
 import { GuestsModule } from './modules/guests/guests.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { ChannelsModule } from './modules/channels/channels.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionGuard } from './common/guards/permission.guard';
@@ -41,6 +42,7 @@ import { PermissionGuard } from './common/guards/permission.guard';
     GuestsModule,
     ReservationsModule,
     PaymentsModule,
+    ChannelsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
