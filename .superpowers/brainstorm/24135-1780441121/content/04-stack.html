@@ -1,0 +1,139 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Fira Sans', sans-serif; background: #0d1117; color: #fff; padding: 32px; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 28px; }
+  .options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card { border-radius: 14px; background: #141820; border: 2px solid #1e2535; cursor: pointer; overflow: hidden; transition: all 0.2s; }
+  .card:hover { border-color: #0f766e55; transform: translateY(-3px); }
+  .head { padding: 24px 20px 16px; display: flex; align-items: center; gap: 14px; }
+  .logo-box { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .head-text h2 { font-size: 16px; font-weight: 700; }
+  .head-text span { font-size: 11px; color: #555; }
+  .body { padding: 0 20px 20px; }
+  .pros { margin-bottom: 12px; }
+  .pros h4 { font-size: 11px; color: #0f766e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .pros ul { list-style: none; padding: 0; }
+  .pros li { font-size: 12px; color: #888; padding: 3px 0; padding-left: 14px; position: relative; }
+  .pros li::before { content: '→'; position: absolute; left: 0; color: #0f766e; font-size: 10px; top: 4px; }
+  .cons h4 { font-size: 11px; color: #444; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .cons li { font-size: 12px; color: #555; padding: 3px 0; padding-left: 14px; position: relative; }
+  .cons li::before { content: '·'; position: absolute; left: 0; color: #444; top: 0; }
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-top: 14px; }
+  .recommended { border-color: #0f766e !important; position: relative; }
+  .recommended::after { content: '★ RECOMENDADO'; position: absolute; top: -1px; right: -1px; background: #0f766e; color: #fff; font-size: 9px; font-weight: 700; padding: 3px 10px; border-radius: 0 12px 0 8px; letter-spacing: 0.5px; }
+  .divider { height: 1px; background: #1e2535; margin: 12px 0; }
+</style>
+
+<h1>Stack del frontend</h1>
+<p class="subtitle">¿Con qué tecnología construimos el frontend?</p>
+
+<div class="options">
+
+  <!-- Next.js + shadcn -->
+  <div class="card recommended" data-value="nextjs-shadcn" onclick="select(this,'nextjs-shadcn')">
+    <div class="head">
+      <div class="logo-box" style="background:#1a1a2e">▲</div>
+      <div class="head-text">
+        <h2>Next.js + shadcn/ui</h2>
+        <span>React · TypeScript · Tailwind</span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="pros">
+        <h4>Ventajas</h4>
+        <ul>
+          <li>Componentes hermosos listos para usar</li>
+          <li>Excelente para dashboards admin</li>
+          <li>TypeScript nativo — mismo lenguaje que el backend</li>
+          <li>Ecosistema enorme, muy documentado</li>
+          <li>Deploy fácil en Vercel</li>
+        </ul>
+      </div>
+      <div class="divider"></div>
+      <div class="cons">
+        <h4>A considerar</h4>
+        <ul class="cons">
+          <li>Requiere saber React básico</li>
+        </ul>
+      </div>
+      <span class="tag" style="background:#0f766e22;color:#0f766e">La elección más sólida</span>
+    </div>
+  </div>
+
+  <!-- Nuxt + Nuxt UI -->
+  <div class="card" data-value="nuxt-ui" onclick="select(this,'nuxt-ui')">
+    <div class="head">
+      <div class="logo-box" style="background:#00dc8222;color:#00dc82;font-size:16px;font-weight:700">N</div>
+      <div class="head-text">
+        <h2>Nuxt 3 + Nuxt UI</h2>
+        <span>Vue 3 · TypeScript · Tailwind</span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="pros">
+        <h4>Ventajas</h4>
+        <ul>
+          <li>Curva de aprendizaje más suave que React</li>
+          <li>Nuxt UI tiene componentes muy pulidos</li>
+          <li>Opinado — menos decisiones que tomar</li>
+          <li>Auto-imports muy convenientes</li>
+        </ul>
+      </div>
+      <div class="divider"></div>
+      <div class="cons">
+        <h4>A considerar</h4>
+        <ul class="cons">
+          <li>Ecosistema más pequeño que React</li>
+          <li>Menos ejemplos de dashboards admin</li>
+        </ul>
+      </div>
+      <span class="tag" style="background:#1a2035;color:#666">Buena alternativa Vue</span>
+    </div>
+  </div>
+
+  <!-- React + Vite -->
+  <div class="card" data-value="react-vite" onclick="select(this,'react-vite')">
+    <div class="head">
+      <div class="logo-box" style="background:#61dafb22;color:#61dafb;font-size:18px">⚛</div>
+      <div class="head-text">
+        <h2>React + Vite</h2>
+        <span>React · TypeScript · Tailwind</span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="pros">
+        <h4>Ventajas</h4>
+        <ul>
+          <li>Build ultra-rápido con Vite</li>
+          <li>Más simple que Next.js (sin SSR)</li>
+          <li>Total libertad en la arquitectura</li>
+          <li>Ideal si es 100% SPA</li>
+        </ul>
+      </div>
+      <div class="divider"></div>
+      <div class="cons">
+        <h4>A considerar</h4>
+        <ul class="cons">
+          <li>Sin SSR — no ideal para SEO</li>
+          <li>Hay que elegir más librerías manualmente</li>
+        </ul>
+      </div>
+      <span class="tag" style="background:#1a2035;color:#666">Más ligero y simple</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function select(el, val) {
+  document.querySelectorAll('.card').forEach(c => {
+    if (!c.classList.contains('recommended')) c.style.borderColor = '#1e2535';
+    else c.style.borderColor = '#0f766e';
+  });
+  el.style.borderColor = '#14b8a6';
+  el.style.boxShadow = '0 0 0 1px #14b8a6';
+  if (window.__companion_select) window.__companion_select(val);
+}
+</script>

@@ -1,0 +1,221 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Fira Sans', sans-serif; background: #0d1117; color: #fff; padding: 32px; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 28px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .screen { border-radius: 12px; background: #141820; border: 2px solid #1e2535; cursor: pointer; overflow: hidden; transition: all 0.2s; }
+  .screen:hover { border-color: #0f766e55; transform: translateY(-2px); }
+  .screen.selected { border-color: #0f766e; }
+  .thumb { height: 120px; background: #0d1117; position: relative; overflow: hidden; padding: 10px; }
+  .label { padding: 10px 12px; }
+  .label h3 { font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+  .label p { font-size: 10px; color: #555; line-height: 1.4; }
+  .check { position: absolute; top: 8px; right: 8px; width: 18px; height: 18px; border-radius: 50%; background: #0f766e; display: none; align-items: center; justify-content: center; font-size: 10px; }
+  .screen.selected .check { display: flex; }
+
+  /* Miniaturas */
+  .bar { height: 6px; border-radius: 2px; background: #1e2d40; margin-bottom: 5px; }
+  .bar.teal { background: #0f766e55; }
+  .bar.bright { background: #0f766e; }
+  .row { display: flex; gap: 5px; margin-bottom: 5px; }
+  .box { border-radius: 5px; background: #1a2035; }
+  .stat-mini { flex: 1; height: 28px; background: #1a2035; border-radius: 5px; display: flex; flex-direction: column; justify-content: center; padding: 4px 6px; }
+  .stat-mini .n { height: 8px; border-radius: 2px; background: #0f766e; width: 60%; margin-bottom: 3px; }
+  .stat-mini .t { height: 5px; border-radius: 2px; background: #2a3350; width: 80%; }
+  .table-row { height: 12px; background: #1a2035; border-radius: 3px; margin-bottom: 4px; }
+  .table-row.header { background: #0f766e22; }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-cell { height: 12px; border-radius: 2px; background: #1a2035; }
+  .cal-cell.occ { background: #0f766e55; }
+  .cal-cell.free { background: #1a2035; }
+  .form-field { height: 10px; background: #1a2035; border-radius: 3px; margin-bottom: 5px; }
+  .form-field.half { width: 48%; display: inline-block; }
+  .badge-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .badge { height: 14px; border-radius: 10px; background: #1a2035; }
+
+  .hint { margin-top: 20px; padding: 12px 16px; background: #1a2035; border-radius: 8px; font-size: 12px; color: #666; }
+  .hint strong { color: #ccc; }
+</style>
+
+<h1>Pantallas del sistema</h1>
+<p class="subtitle">Seleccioná todas las pantallas que querés incluir (podés elegir varias)</p>
+
+<div class="grid">
+
+  <!-- Dashboard -->
+  <div class="screen selected" data-value="dashboard" onclick="toggle(this)">
+    <div class="check">✓</div>
+    <div class="thumb">
+      <div class="row">
+        <div class="stat-mini"><div class="n"></div><div class="t"></div></div>
+        <div class="stat-mini"><div class="n"></div><div class="t"></div></div>
+        <div class="stat-mini"><div class="n"></div><div class="t"></div></div>
+      </div>
+      <div class="bar teal" style="height:40px;border-radius:5px;margin-top:4px"></div>
+      <div class="row" style="margin-top:5px">
+        <div class="box" style="flex:1;height:18px"></div>
+        <div class="box" style="flex:1;height:18px"></div>
+      </div>
+    </div>
+    <div class="label">
+      <h3>📊 Dashboard</h3>
+      <p>Métricas clave, ocupación, ingresos del día</p>
+    </div>
+  </div>
+
+  <!-- Reservas -->
+  <div class="screen selected" data-value="reservations" onclick="toggle(this)">
+    <div class="check">✓</div>
+    <div class="thumb">
+      <div class="table-row header"></div>
+      <div class="table-row"></div>
+      <div class="table-row"></div>
+      <div class="table-row"></div>
+      <div class="table-row"></div>
+      <div class="table-row"></div>
+      <div class="badge-row" style="margin-top:6px">
+        <div class="badge" style="width:40px"></div>
+        <div class="badge" style="width:55px;background:#0f766e44"></div>
+        <div class="badge" style="width:35px"></div>
+      </div>
+    </div>
+    <div class="label">
+      <h3>📅 Reservas</h3>
+      <p>Listado, nueva reserva, check-in/out</p>
+    </div>
+  </div>
+
+  <!-- Calendario -->
+  <div class="screen selected" data-value="calendar" onclick="toggle(this)">
+    <div class="check">✓</div>
+    <div class="thumb">
+      <div class="bar" style="margin-bottom:6px"></div>
+      <div class="calendar-grid">
+        <div class="cal-cell"></div><div class="cal-cell"></div><div class="cal-cell occ"></div><div class="cal-cell occ"></div><div class="cal-cell occ"></div><div class="cal-cell"></div><div class="cal-cell"></div>
+        <div class="cal-cell"></div><div class="cal-cell occ"></div><div class="cal-cell occ"></div><div class="cal-cell"></div><div class="cal-cell occ"></div><div class="cal-cell occ"></div><div class="cal-cell occ"></div>
+        <div class="cal-cell occ"></div><div class="cal-cell occ"></div><div class="cal-cell"></div><div class="cal-cell"></div><div class="cal-cell occ"></div><div class="cal-cell"></div><div class="cal-cell"></div>
+        <div class="cal-cell"></div><div class="cal-cell"></div><div class="cal-cell occ"></div><div class="cal-cell occ"></div><div class="cal-cell occ"></div><div class="cal-cell occ"></div><div class="cal-cell"></div>
+        <div class="cal-cell occ"></div><div class="cal-cell"></div><div class="cal-cell"></div><div class="cal-cell occ"></div><div class="cal-cell"></div><div class="cal-cell"></div><div class="cal-cell occ"></div>
+      </div>
+    </div>
+    <div class="label">
+      <h3>🗓 Calendario</h3>
+      <p>Vista mensual de ocupación por habitación</p>
+    </div>
+  </div>
+
+  <!-- Habitaciones -->
+  <div class="screen selected" data-value="rooms" onclick="toggle(this)">
+    <div class="check">✓</div>
+    <div class="thumb">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">
+        <div style="height:22px;border-radius:4px;background:#0f766e"></div>
+        <div style="height:22px;border-radius:4px;background:#1a2035"></div>
+        <div style="height:22px;border-radius:4px;background:#0f766e55"></div>
+        <div style="height:22px;border-radius:4px;background:#1a2035"></div>
+        <div style="height:22px;border-radius:4px;background:#1a2035"></div>
+        <div style="height:22px;border-radius:4px;background:#0f766e"></div>
+        <div style="height:22px;border-radius:4px;background:#1a2035"></div>
+        <div style="height:22px;border-radius:4px;background:#0f766e55"></div>
+        <div style="height:22px;border-radius:4px;background:#dc262655"></div>
+        <div style="height:22px;border-radius:4px;background:#1a2035"></div>
+        <div style="height:22px;border-radius:4px;background:#0f766e"></div>
+        <div style="height:22px;border-radius:4px;background:#1a2035"></div>
+      </div>
+      <div class="badge-row" style="margin-top:8px">
+        <div class="badge" style="width:45px;background:#0f766e44"></div>
+        <div class="badge" style="width:45px;background:#dc262622"></div>
+        <div class="badge" style="width:55px;background:#1a2035"></div>
+      </div>
+    </div>
+    <div class="label">
+      <h3>🛏 Habitaciones</h3>
+      <p>Grid de estado: libre, ocupada, mantenimiento</p>
+    </div>
+  </div>
+
+  <!-- Huéspedes -->
+  <div class="screen selected" data-value="guests" onclick="toggle(this)">
+    <div class="check">✓</div>
+    <div class="thumb">
+      <div class="bar" style="margin-bottom:6px;height:18px;border-radius:5px"></div>
+      <div class="table-row header"></div>
+      <div class="table-row"></div>
+      <div class="table-row"></div>
+      <div class="table-row"></div>
+      <div class="table-row"></div>
+    </div>
+    <div class="label">
+      <h3>👥 Huéspedes</h3>
+      <p>Historial, perfil, preferencias por huésped</p>
+    </div>
+  </div>
+
+  <!-- Pagos -->
+  <div class="screen selected" data-value="payments" onclick="toggle(this)">
+    <div class="check">✓</div>
+    <div class="thumb">
+      <div class="row">
+        <div class="stat-mini"><div class="n"></div><div class="t"></div></div>
+        <div class="stat-mini"><div class="n"></div><div class="t"></div></div>
+      </div>
+      <div class="table-row header" style="margin-top:6px"></div>
+      <div class="table-row"></div>
+      <div class="table-row"></div>
+      <div class="table-row"></div>
+    </div>
+    <div class="label">
+      <h3>💳 Pagos</h3>
+      <p>Registrar cobros, estado, método de pago</p>
+    </div>
+  </div>
+
+  <!-- Propiedades -->
+  <div class="screen" data-value="properties" onclick="toggle(this)">
+    <div class="check">✓</div>
+    <div class="thumb">
+      <div class="box" style="height:50px;width:100%;margin-bottom:6px"></div>
+      <div class="bar"></div>
+      <div class="bar" style="width:70%"></div>
+      <div class="form-field"></div>
+    </div>
+    <div class="label">
+      <h3>🏨 Propiedades</h3>
+      <p>Configuración del hotel, tipos de habitación</p>
+    </div>
+  </div>
+
+  <!-- Usuarios -->
+  <div class="screen" data-value="users" onclick="toggle(this)">
+    <div class="check">✓</div>
+    <div class="thumb">
+      <div class="table-row header"></div>
+      <div class="table-row"></div>
+      <div class="table-row"></div>
+      <div class="table-row"></div>
+      <div class="badge-row" style="margin-top:6px">
+        <div class="badge" style="width:60px;background:#0f766e44"></div>
+        <div class="badge" style="width:45px"></div>
+      </div>
+    </div>
+    <div class="label">
+      <h3>👤 Usuarios</h3>
+      <p>Personal del hotel, roles y permisos</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="hint">
+  <strong>Las primeras 6 ya están seleccionadas</strong> — son el núcleo operativo. Propiedades y Usuarios son más de configuración. Podés agregar o quitar según tu prioridad.
+</div>
+
+<script>
+function toggle(el) {
+  el.classList.toggle('selected');
+  const selected = [...document.querySelectorAll('.screen.selected')].map(e => e.dataset.value);
+  if (window.__companion_select) window.__companion_select(selected.join(','));
+}
+</script>

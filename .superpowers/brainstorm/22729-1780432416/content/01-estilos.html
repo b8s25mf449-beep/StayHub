@@ -1,0 +1,192 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Fira Sans', sans-serif; background: #0f1117; color: #fff; padding: 32px; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 8px; color: #fff; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 32px; }
+  .options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card { border-radius: 16px; overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border: 2px solid transparent; }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+  .card[data-value] { cursor: pointer; }
+  .preview { height: 200px; position: relative; overflow: hidden; }
+  .card-label { padding: 14px 16px; }
+  .card-label h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .card-label p { font-size: 12px; color: #999; line-height: 1.5; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-top: 6px; }
+
+  /* --- OPCIÓN A: Dark Premium --- */
+  .a { background: #141820; border-color: #1e2535; }
+  .a .preview { background: #0d1117; }
+  .a .sidebar { position: absolute; left: 0; top: 0; bottom: 0; width: 52px; background: #1a2035; display: flex; flex-direction: column; align-items: center; padding: 14px 0; gap: 16px; }
+  .a .dot { width: 28px; height: 28px; border-radius: 8px; background: #2a3350; }
+  .a .dot.active { background: #0f766e; }
+  .a .main { position: absolute; left: 52px; right: 0; top: 0; bottom: 0; padding: 12px; }
+  .a .top-bar { height: 28px; background: #1a2035; border-radius: 6px; margin-bottom: 10px; }
+  .a .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+  .a .stat { background: #1a2035; border-radius: 8px; padding: 8px; }
+  .a .stat .num { font-size: 16px; font-weight: 700; color: #0f766e; }
+  .a .stat .lbl { font-size: 8px; color: #666; margin-top: 2px; }
+  .a .chart-area { background: #1a2035; border-radius: 8px; height: 60px; position: relative; overflow: hidden; }
+  .a .chart-line { position: absolute; bottom: 8px; left: 8px; right: 8px; height: 40px; }
+  .a .card-label { background: #141820; }
+  .a .badge { background: #0f766e22; color: #0f766e; }
+
+  /* --- OPCIÓN B: Light Clean --- */
+  .b { background: #fafbfc; border-color: #e5e7eb; }
+  .b .preview { background: #f0fdfa; }
+  .b .sidebar { position: absolute; left: 0; top: 0; bottom: 0; width: 52px; background: #fff; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; align-items: center; padding: 14px 0; gap: 14px; }
+  .b .dot { width: 28px; height: 28px; border-radius: 8px; background: #f0f9ff; }
+  .b .dot.active { background: #0f766e; }
+  .b .main { position: absolute; left: 52px; right: 0; top: 0; bottom: 0; padding: 12px; }
+  .b .top-bar { height: 28px; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 10px; }
+  .b .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+  .b .stat { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; }
+  .b .stat .num { font-size: 16px; font-weight: 700; color: #0f766e; }
+  .b .stat .lbl { font-size: 8px; color: #999; margin-top: 2px; }
+  .b .chart-area { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; height: 60px; }
+  .b .card-label { background: #fafbfc; }
+  .b .badge { background: #ecfdf5; color: #059669; }
+  .b h3, .b p { color: #111 !important; }
+
+  /* --- OPCIÓN C: Glass / Premium --- */
+  .c { background: linear-gradient(135deg, #0f1a2e 0%, #1a2535 100%); border-color: rgba(255,255,255,0.1); }
+  .c .preview { background: linear-gradient(135deg, #0a1628 0%, #162040 100%); }
+  .c .sidebar { position: absolute; left: 0; top: 0; bottom: 0; width: 52px; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; align-items: center; padding: 14px 0; gap: 14px; }
+  .c .dot { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.08); }
+  .c .dot.active { background: linear-gradient(135deg, #0f766e, #14b8a6); }
+  .c .main { position: absolute; left: 52px; right: 0; top: 0; bottom: 0; padding: 12px; }
+  .c .top-bar { height: 28px; background: rgba(255,255,255,0.06); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; margin-bottom: 10px; }
+  .c .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+  .c .stat { background: rgba(255,255,255,0.06); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px; }
+  .c .stat .num { font-size: 16px; font-weight: 700; color: #14b8a6; }
+  .c .stat .lbl { font-size: 8px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .c .chart-area { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; height: 60px; }
+  .c .card-label { background: rgba(15,26,46,0.9); }
+  .c .badge { background: rgba(20,184,166,0.15); color: #14b8a6; }
+
+  /* Chart SVG shared */
+  .chart-svg { width: 100%; height: 100%; }
+
+  .question { margin-top: 32px; padding: 16px 20px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; font-size: 14px; color: #ccc; }
+  .question strong { color: #fff; display: block; margin-bottom: 4px; font-size: 15px; }
+</style>
+
+<h1>StayHub — Dirección Visual</h1>
+<p class="subtitle">Haz clic en el estilo que más te guste para el sistema de gestión del hotel</p>
+
+<div class="options">
+
+  <!-- OPCIÓN A -->
+  <div class="card a" data-value="A" onclick="selectOption(this, 'A')">
+    <div class="preview">
+      <div class="a sidebar">
+        <div class="dot active"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+      <div class="a main">
+        <div class="a top-bar"></div>
+        <div class="a stat-row">
+          <div class="a stat"><div class="num">42</div><div class="lbl">Habitaciones</div></div>
+          <div class="a stat"><div class="num">87%</div><div class="lbl">Ocupación</div></div>
+          <div class="a stat"><div class="num">$12k</div><div class="lbl">Ingresos</div></div>
+        </div>
+        <div class="a chart-area">
+          <svg class="chart-svg" viewBox="0 0 200 50" preserveAspectRatio="none">
+            <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f766e" stop-opacity="0.4"/><stop offset="100%" stop-color="#0f766e" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,35 C20,30 40,20 60,22 C80,24 100,15 120,18 C140,21 160,10 200,8 L200,50 L0,50 Z" fill="url(#ga)"/>
+            <path d="M0,35 C20,30 40,20 60,22 C80,24 100,15 120,18 C140,21 160,10 200,8" fill="none" stroke="#0f766e" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="card-label a">
+      <h3 style="color:#fff">Dark Professional</h3>
+      <p>Oscuro con acentos teal. Ideal para uso nocturno y recepcionistas en pantalla todo el día.</p>
+      <span class="badge">Recomendado</span>
+    </div>
+  </div>
+
+  <!-- OPCIÓN B -->
+  <div class="card b" data-value="B" onclick="selectOption(this, 'B')">
+    <div class="preview">
+      <div class="b sidebar">
+        <div class="dot active"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+      <div class="b main">
+        <div class="b top-bar"></div>
+        <div class="b stat-row">
+          <div class="b stat"><div class="num">42</div><div class="lbl">Habitaciones</div></div>
+          <div class="b stat"><div class="num">87%</div><div class="lbl">Ocupación</div></div>
+          <div class="b stat"><div class="num">$12k</div><div class="lbl">Ingresos</div></div>
+        </div>
+        <div class="b chart-area">
+          <svg class="chart-svg" viewBox="0 0 200 50" preserveAspectRatio="none">
+            <defs><linearGradient id="gb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f766e" stop-opacity="0.15"/><stop offset="100%" stop-color="#0f766e" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,35 C20,30 40,20 60,22 C80,24 100,15 120,18 C140,21 160,10 200,8 L200,50 L0,50 Z" fill="url(#gb)"/>
+            <path d="M0,35 C20,30 40,20 60,22 C80,24 100,15 120,18 C140,21 160,10 200,8" fill="none" stroke="#0f766e" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="card-label b">
+      <h3>Light Clean</h3>
+      <p>Fondo blanco con bordes sutiles. Familiar, fácil de leer, muy accesible para todos.</p>
+      <span class="badge">Más accesible</span>
+    </div>
+  </div>
+
+  <!-- OPCIÓN C -->
+  <div class="card c" data-value="C" onclick="selectOption(this, 'C')">
+    <div class="preview">
+      <div class="c sidebar">
+        <div class="dot active"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+      <div class="c main">
+        <div class="c top-bar"></div>
+        <div class="c stat-row">
+          <div class="c stat"><div class="num">42</div><div class="lbl">Habitaciones</div></div>
+          <div class="c stat"><div class="num">87%</div><div class="lbl">Ocupación</div></div>
+          <div class="c stat"><div class="num">$12k</div><div class="lbl">Ingresos</div></div>
+        </div>
+        <div class="c chart-area">
+          <svg class="chart-svg" viewBox="0 0 200 50" preserveAspectRatio="none">
+            <defs><linearGradient id="gc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#14b8a6" stop-opacity="0.3"/><stop offset="100%" stop-color="#14b8a6" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,35 C20,30 40,20 60,22 C80,24 100,15 120,18 C140,21 160,10 200,8 L200,50 L0,50 Z" fill="url(#gc)"/>
+            <path d="M0,35 C20,30 40,20 60,22 C80,24 100,15 120,18 C140,21 160,10 200,8" fill="none" stroke="#14b8a6" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="card-label c">
+      <h3 style="color:#fff">Glass / Premium</h3>
+      <p>Efectos glassmorphism con gradientes profundos. Aspecto lujoso y moderno.</p>
+      <span class="badge">Más premium</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="question">
+  <strong>¿Cuál dirección visual va más con StayHub?</strong>
+  Haz clic en tu opción favorita — o dime si quieres ver variaciones de alguna.
+</div>
+
+<script>
+function selectOption(el, value) {
+  document.querySelectorAll('.card').forEach(c => c.style.borderColor = '');
+  const colors = { A: '#0f766e', B: '#059669', C: '#14b8a6' };
+  el.style.borderColor = colors[value];
+  if (window.__companion_select) window.__companion_select(value);
+}
+</script>

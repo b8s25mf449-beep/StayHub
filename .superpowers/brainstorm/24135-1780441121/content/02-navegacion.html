@@ -1,0 +1,155 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Fira Sans', sans-serif; background: #0d1117; color: #fff; padding: 32px; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 28px; }
+  .options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card { border-radius: 14px; overflow: hidden; cursor: pointer; border: 2px solid #1e2535; transition: all 0.2s; background: #141820; }
+  .card:hover { border-color: #0f766e; transform: translateY(-3px); }
+  .preview { height: 180px; position: relative; background: #0d1117; overflow: hidden; }
+  .info { padding: 14px 16px; }
+  .info h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: #fff; }
+  .info p { font-size: 11px; color: #666; line-height: 1.5; }
+  .tag { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; background: #0f766e22; color: #0f766e; }
+
+  /* NAV A: Sidebar icon + label */
+  .nav-a .sidebar { position: absolute; left: 0; top: 0; bottom: 0; width: 150px; background: #1a2035; border-right: 1px solid #1e2d40; padding: 12px 8px; }
+  .nav-a .logo { height: 24px; background: #0f766e; border-radius: 6px; margin-bottom: 16px; }
+  .nav-a .item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 6px; margin-bottom: 3px; }
+  .nav-a .item.active { background: #0f766e22; }
+  .nav-a .icon { width: 14px; height: 14px; border-radius: 3px; background: #2a3350; flex-shrink: 0; }
+  .nav-a .item.active .icon { background: #0f766e; }
+  .nav-a .label { height: 8px; border-radius: 2px; background: #2a3350; flex: 1; }
+  .nav-a .item.active .label { background: #0f766e88; }
+  .nav-a .main { position: absolute; left: 150px; right: 0; top: 0; bottom: 0; padding: 10px; }
+  .nav-a .topbar { height: 22px; background: #1a2035; border-radius: 5px; margin-bottom: 8px; }
+  .nav-a .content { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .nav-a .block { background: #1a2035; border-radius: 6px; height: 48px; }
+
+  /* NAV B: Sidebar icon only */
+  .nav-b .sidebar { position: absolute; left: 0; top: 0; bottom: 0; width: 52px; background: #1a2035; border-right: 1px solid #1e2d40; padding: 12px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .nav-b .logo { width: 28px; height: 28px; border-radius: 8px; background: #0f766e; margin-bottom: 6px; }
+  .nav-b .icon { width: 28px; height: 28px; border-radius: 7px; background: #2a3350; }
+  .nav-b .icon.active { background: #0f766e; }
+  .nav-b .main { position: absolute; left: 52px; right: 0; top: 0; bottom: 0; padding: 10px; }
+  .nav-b .topbar { height: 22px; background: #1a2035; border-radius: 5px; margin-bottom: 8px; }
+  .nav-b .content { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .nav-b .block { background: #1a2035; border-radius: 6px; height: 40px; }
+  .nav-b .wide { grid-column: span 2; height: 80px; }
+
+  /* NAV C: Top nav + content */
+  .nav-c .topbar { position: absolute; left: 0; right: 0; top: 0; height: 40px; background: #1a2035; border-bottom: 1px solid #1e2d40; padding: 0 12px; display: flex; align-items: center; gap: 8px; }
+  .nav-c .logo { width: 24px; height: 24px; border-radius: 6px; background: #0f766e; }
+  .nav-c .navitem { height: 8px; border-radius: 2px; background: #2a3350; width: 40px; }
+  .nav-c .navitem.active { background: #0f766e88; }
+  .nav-c .spacer { flex: 1; }
+  .nav-c .avatar { width: 24px; height: 24px; border-radius: 50%; background: #0f766e; }
+  .nav-c .main { position: absolute; left: 0; right: 0; top: 40px; bottom: 0; padding: 10px; }
+  .nav-c .content { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 6px; }
+  .nav-c .block { background: #1a2035; border-radius: 6px; height: 36px; }
+  .nav-c .wide { height: 80px; grid-column: span 2; }
+  .nav-c .full { grid-column: span 4; height: 48px; background: #1a2035; border-radius: 6px; }
+</style>
+
+<h1>Estructura de navegación</h1>
+<p class="subtitle">¿Cómo querés que se organice el menú principal?</p>
+
+<div class="options">
+
+  <!-- A: Sidebar expandido -->
+  <div class="card" data-value="sidebar-full" onclick="selectOption(this,'sidebar-full')">
+    <div class="preview nav-a">
+      <div class="sidebar">
+        <div class="logo"></div>
+        <div class="item active"><div class="icon"></div><div class="label" style="width:60px"></div></div>
+        <div class="item"><div class="icon"></div><div class="label" style="width:70px"></div></div>
+        <div class="item"><div class="icon"></div><div class="label" style="width:55px"></div></div>
+        <div class="item"><div class="icon"></div><div class="label" style="width:65px"></div></div>
+        <div class="item"><div class="icon"></div><div class="label" style="width:50px"></div></div>
+        <div class="item"><div class="icon"></div><div class="label" style="width:60px"></div></div>
+      </div>
+      <div class="main">
+        <div class="topbar"></div>
+        <div class="content">
+          <div class="block"></div><div class="block"></div>
+          <div class="block" style="grid-column:span 2;height:70px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="info">
+      <h3>Sidebar con etiquetas</h3>
+      <p>Menú lateral siempre visible con ícono + nombre. Fácil de aprender, ideal para usuarios nuevos.</p>
+      <span class="tag">Más intuitivo</span>
+    </div>
+  </div>
+
+  <!-- B: Sidebar íconos + tooltip -->
+  <div class="card" data-value="sidebar-icons" onclick="selectOption(this,'sidebar-icons')">
+    <div class="preview nav-b">
+      <div class="sidebar">
+        <div class="logo"></div>
+        <div class="icon active"></div>
+        <div class="icon"></div>
+        <div class="icon"></div>
+        <div class="icon"></div>
+        <div class="icon"></div>
+        <div class="icon"></div>
+      </div>
+      <div class="main">
+        <div class="topbar"></div>
+        <div class="content">
+          <div class="block"></div>
+          <div class="block"></div>
+          <div class="block"></div>
+          <div class="wide"></div>
+          <div class="block"></div>
+        </div>
+      </div>
+    </div>
+    <div class="info">
+      <h3>Sidebar compacto</h3>
+      <p>Solo íconos con tooltip al pasar el mouse. Más espacio para el contenido. Recomendado para expertos.</p>
+      <span class="tag">Más espacio</span>
+    </div>
+  </div>
+
+  <!-- C: Top nav -->
+  <div class="card" data-value="topnav" onclick="selectOption(this,'topnav')">
+    <div class="preview nav-c">
+      <div class="topbar">
+        <div class="logo"></div>
+        <div class="navitem active"></div>
+        <div class="navitem"></div>
+        <div class="navitem"></div>
+        <div class="navitem"></div>
+        <div class="navitem"></div>
+        <div class="spacer"></div>
+        <div class="avatar"></div>
+      </div>
+      <div class="main">
+        <div class="content">
+          <div class="block"></div><div class="block"></div>
+          <div class="block"></div><div class="block"></div>
+        </div>
+        <div class="content" style="margin-top:6px">
+          <div class="wide"></div><div class="wide"></div>
+        </div>
+      </div>
+    </div>
+    <div class="info">
+      <h3>Navegación superior</h3>
+      <p>Menú en la parte de arriba. Más horizontal, parecido a apps web clásicas. Mejor en pantallas anchas.</p>
+      <span class="tag">Estilo clásico</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function selectOption(el, value) {
+  document.querySelectorAll('.card').forEach(c => c.style.borderColor = '#1e2535');
+  el.style.borderColor = '#0f766e';
+  if (window.__companion_select) window.__companion_select(value);
+}
+</script>

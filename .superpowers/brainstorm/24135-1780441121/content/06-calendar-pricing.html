@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StayHub — Calendario con precios</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Fira Sans', sans-serif; background: #080c12; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+.topbar { padding: 14px 24px; background: #0d1117; border-bottom: 1px solid #1a2535; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.topbar h2 { font-size: 17px; font-weight: 600; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.btn { padding: 7px 14px; border-radius: 7px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; font-family: inherit; transition: all 0.15s; }
+.btn-primary { background: #0f766e; color: #fff; }
+.btn-ghost { background: #1a2035; color: #ccc; border: 1px solid #1e2d40; }
+.toggle { display: flex; background: #1a2035; border-radius: 7px; border: 1px solid #1e2d40; overflow: hidden; }
+.toggle-btn { padding: 6px 12px; font-size: 12px; cursor: pointer; color: #666; border: none; background: none; font-family: inherit; transition: all 0.15s; }
+.toggle-btn.active { background: #0f766e22; color: #0f766e; }
+
+.content { flex: 1; overflow: auto; padding: 20px 24px; }
+
+.legend { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
+.legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+.cal-wrapper { background: #0f1520; border: 1px solid #1a2535; border-radius: 12px; overflow: hidden; }
+
+/* Header fijo con días */
+.cal-head { display: grid; gap: 1px; background: #1a2535; border-bottom: 1px solid #1a2535; position: sticky; top: 0; z-index: 10; }
+.cal-head-row { display: grid; background: #0f1520; }
+.day-header { padding: 8px 4px; text-align: center; font-size: 11px; color: #4a5a6c; border-right: 1px solid #1a2535; }
+.day-header.today { color: #0f766e; font-weight: 600; }
+.room-header-cell { padding: 8px 12px; font-size: 11px; color: #4a5a6c; background: #0d1117; border-right: 1px solid #1a2535; white-space: nowrap; font-weight: 600; }
+
+/* Filas de habitaciones */
+.cal-body { }
+.cal-row { display: grid; border-bottom: 1px solid #0d1117; }
+.cal-row:last-child { border-bottom: none; }
+
+.room-label { padding: 0 12px; display: flex; flex-direction: column; justify-content: center; background: #0d1117; border-right: 1px solid #1a2535; min-height: 52px; }
+.room-label .num { font-size: 13px; font-weight: 700; font-family: 'Fira Code', monospace; color: #ccc; }
+.room-label .type { font-size: 10px; color: #3a4a5c; margin-top: 2px; }
+.room-label .base { font-size: 10px; color: #0f766e; margin-top: 1px; font-family: 'Fira Code', monospace; }
+
+.day-cell { border-right: 1px solid #0d1117; min-height: 52px; position: relative; cursor: pointer; transition: background 0.1s; }
+.day-cell:hover { background: #1a2535 !important; }
+
+/* Celda libre con precio */
+.day-cell.free { background: transparent; }
+.day-cell.free .price-tag { position: absolute; bottom: 4px; left: 0; right: 0; text-align: center; font-size: 10px; font-family: 'Fira Code', monospace; color: #2a3a4a; }
+.day-cell.free:hover .price-tag { color: #0f766e; }
+.day-cell.free .price-edit { display: none; position: absolute; inset: 4px; background: #0f766e15; border: 1px solid #0f766e44; border-radius: 4px; align-items: center; justify-content: center; }
+.day-cell.free:hover .price-edit { display: flex; }
+.day-cell.free:hover .price-tag { display: none; }
+
+/* Celda ocupada (reserva) */
+.day-cell.res { background: #0f766e18; }
+.day-cell.res-start { border-left: 2px solid #0f766e; }
+.day-cell.res-end { border-right: 2px solid #0f766e !important; }
+.day-cell.res .res-label { position: absolute; top: 6px; left: 4px; right: 4px; font-size: 9px; color: #0f766e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.day-cell.res .price-tag { position: absolute; bottom: 4px; left: 0; right: 0; text-align: center; font-size: 10px; font-family: 'Fira Code', monospace; color: #0f766e88; }
+
+.day-cell.res2 { background: #0369a115; }
+.day-cell.res2-start { border-left: 2px solid #38bdf8; }
+.day-cell.res2-end { border-right: 2px solid #38bdf8 !important; }
+.day-cell.res2 .res-label { color: #38bdf8; }
+.day-cell.res2 .price-tag { color: #38bdf888; }
+
+.day-cell.weekend { background: #ffffff04; }
+
+/* Modal de edición de precio */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #141820; border: 1px solid #1e2d40; border-radius: 14px; padding: 24px; width: 340px; }
+.modal h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.modal .sub { font-size: 12px; color: #4a5a6c; margin-bottom: 20px; }
+.field { margin-bottom: 14px; }
+.field label { font-size: 11px; color: #4a5a6c; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.field input { width: 100%; background: #0d1117; border: 1px solid #1e2d40; border-radius: 7px; padding: 10px 12px; font-size: 14px; color: #fff; font-family: 'Fira Code', monospace; outline: none; }
+.field input:focus { border-color: #0f766e; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+.chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 5px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; background: #1a2035; color: #666; border: 1px solid #1e2d40; transition: all 0.15s; }
+.chip:hover, .chip.active { background: #0f766e22; color: #0f766e; border-color: #0f766e44; }
+.divider { height: 1px; background: #1e2d40; margin: 16px 0; }
+.badge-info { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #0f766e0a; border: 1px solid #0f766e22; border-radius: 6px; font-size: 11px; color: #0f766e; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div style="font-size:11px;color:#4a5a6c;margin-bottom:3px">Calendario de ocupación y tarifas</div>
+    <h2>Junio 2026</h2>
+  </div>
+  <div class="topbar-right">
+    <div class="toggle">
+      <button class="toggle-btn active">Vista precios</button>
+      <button class="toggle-btn">Vista reservas</button>
+    </div>
+    <button class="btn btn-ghost">◀ Mayo</button>
+    <button class="btn btn-ghost">Julio ▶</button>
+    <button class="btn btn-primary">+ Regla de precio</button>
+  </div>
+</div>
+
+<div class="content">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#0f766e33;border:1px solid #0f766e44"></div> Reservada</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0369a133;border:1px solid #38bdf844"></div> Otra fuente</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1a2035;border:1px solid #1e2d40"></div> Libre — click para editar precio</div>
+    <div class="legend-item" style="margin-left:auto;font-size:11px;color:#0f766e">💡 Hacé click en cualquier celda libre para editar el precio de esa noche</div>
+  </div>
+
+  <div class="cal-wrapper" id="calWrapper"></div>
+</div>
+
+<!-- MODAL EDICIÓN -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Editar precio</h3>
+    <p class="sub" id="modalSub">Habitación 101 · Sábado 7 de junio</p>
+
+    <div class="badge-info">
+      <span>💰</span> Precio base de la habitación: <strong id="basePrice">$120/noche</strong>
+    </div>
+
+    <div class="field">
+      <label>Precio para esta noche</label>
+      <input type="number" id="priceInput" value="150" placeholder="0">
+    </div>
+
+    <div class="field">
+      <label>Aplicar también a</label>
+      <div class="chip-row">
+        <div class="chip active">Solo esta noche</div>
+        <div class="chip">Este fin de semana</div>
+        <div class="chip">Toda la semana</div>
+        <div class="chip">Todo el mes</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label>Motivo (opcional)</label>
+      <div class="chip-row">
+        <div class="chip">Temporada alta</div>
+        <div class="chip">Evento local</div>
+        <div class="chip">Fin de semana</div>
+        <div class="chip">Promoción</div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="savePrice()">Guardar precio</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ROOMS = [
+  { num: '101', type: 'SIMPLE', base: 80 },
+  { num: '102', type: 'DOBLE', base: 120 },
+  { num: '103', type: 'DOBLE', base: 120 },
+  { num: '104', type: 'SUITE', base: 220 },
+  { num: '201', type: 'SIMPLE', base: 80 },
+  { num: '202', type: 'DOBLE', base: 120 },
+  { num: '203', type: 'SUITE', base: 220 },
+  { num: '301', type: 'DOBLE', base: 130 },
+  { num: '302', type: 'SUITE', base: 240 },
+];
+
+const DAYS = 16; // show 16 days starting from June 2
+const START_DAY = 2;
+
+// Random reservations pattern
+const RESERVATIONS = {
+  '101': [[2,4,'MG'],[6,8,''],[11,14,'']],
+  '102': [[3,7,''],[9,11,''],[13,15,'']],
+  '103': [[2,3,''],[5,9,'AS'],[12,15,'']],
+  '104': [[4,6,''],[8,12,'']],
+  '201': [[2,5,''],[7,10,''],[12,14,'']],
+  '202': [[3,4,''],[6,11,'']],
+  '203': [[2,6,'JR'],[9,13,'']],
+  '301': [[2,8,''],[10,13,'']],
+  '302': [[3,5,''],[7,9,''],[12,16,'']],
+};
+
+// Custom prices (overrides base)
+const customPrices = {};
+
+function getKey(roomNum, day) { return `${roomNum}-${day}`; }
+
+function isInReservation(roomNum, day) {
+  const res = RESERVATIONS[roomNum] || [];
+  for (const [s, e, name] of res) {
+    if (day >= s && day < e) return { inRes: true, isStart: day === s, isEnd: day === e-1, name };
+  }
+  return { inRes: false };
+}
+
+function getPrice(roomNum, day) {
+  const key = getKey(roomNum, day);
+  if (customPrices[key]) return customPrices[key];
+  const room = ROOMS.find(r => r.num === roomNum);
+  const d = START_DAY + day;
+  const dow = (d + 0) % 7; // rough weekend
+  return room.base + (dow === 5 || dow === 6 ? 30 : 0);
+}
+
+function buildCalendar() {
+  const wrap = document.getElementById('calWrapper');
+
+  // Header
+  const headRow = document.createElement('div');
+  headRow.className = 'cal-head-row';
+  headRow.style.cssText = `display:grid;grid-template-columns:80px repeat(${DAYS},1fr);background:#0d1117;border-bottom:1px solid #1a2535;`;
+
+  const roomHdr = document.createElement('div');
+  roomHdr.className = 'room-header-cell';
+  roomHdr.textContent = 'Hab.';
+  headRow.appendChild(roomHdr);
+
+  for (let d = 0; d < DAYS; d++) {
+    const day = START_DAY + d;
+    const dow = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][(day + 1) % 7];
+    const isWknd = dow === 'Sáb' || dow === 'Dom';
+    const hdr = document.createElement('div');
+    hdr.className = 'day-header' + (day === 2 ? ' today' : '');
+    hdr.style.cssText = `padding:6px 2px;text-align:center;font-size:10px;border-right:1px solid #1a2535;${isWknd ? 'background:#ffffff03;' : ''}`;
+    hdr.innerHTML = `<div style="color:${isWknd?'#3a4a5c':'#4a5a6c'}">${dow}</div><div style="font-size:12px;font-weight:600;color:${day===2?'#0f766e':'#ccc'};margin-top:2px">${day}</div>`;
+    headRow.appendChild(hdr);
+  }
+  wrap.appendChild(headRow);
+
+  // Body
+  const body = document.createElement('div');
+  ROOMS.forEach(room => {
+    const row = document.createElement('div');
+    row.style.cssText = `display:grid;grid-template-columns:80px repeat(${DAYS},1fr);border-bottom:1px solid #0d1117;`;
+
+    const lbl = document.createElement('div');
+    lbl.className = 'room-label';
+    lbl.innerHTML = `<div class="num">${room.num}</div><div class="type">${room.type}</div><div class="base">$${room.base}</div>`;
+    row.appendChild(lbl);
+
+    for (let d = 0; d < DAYS; d++) {
+      const { inRes, isStart, isEnd, name } = isInReservation(room.num, START_DAY + d);
+      const price = getPrice(room.num, START_DAY + d);
+      const day = START_DAY + d;
+      const dow = (day + 1) % 7;
+      const isWknd = dow === 0 || dow === 6;
+      const isCustom = !!customPrices[getKey(room.num, day)];
+
+      const cell = document.createElement('div');
+      cell.style.cssText = `border-right:1px solid #0d1117;min-height:52px;position:relative;cursor:pointer;transition:background 0.1s;${isWknd && !inRes ? 'background:#ffffff03;' : ''}`;
+
+      if (inRes) {
+        const resIdx = RESERVATIONS[room.num].findIndex(([s,e]) => day >= s && day < e);
+        const isBlue = resIdx % 2 === 1;
+        cell.style.background = isBlue ? '#0369a115' : '#0f766e15';
+        if (isStart) cell.style.borderLeft = `2px solid ${isBlue ? '#38bdf8' : '#0f766e'}`;
+        if (isEnd) cell.style.borderRight = `2px solid ${isBlue ? '#38bdf8' : '#0f766e'} !important`;
+        cell.innerHTML = `
+          ${isStart && name ? `<div style="position:absolute;top:5px;left:6px;right:4px;font-size:9px;color:${isBlue?'#38bdf8':'#0f766e'};font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>` : ''}
+          <div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:10px;font-family:'Fira Code',monospace;color:${isBlue?'#38bdf888':'#0f766e88'}">$${price}</div>`;
+      } else {
+        cell.innerHTML = `
+          <div class="price-normal" style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:10px;font-family:'Fira Code',monospace;color:${isCustom?'#0f766e':'#2a3a4a'}">$${price}${isCustom?' ✓':''}</div>
+          <div class="price-hover" style="display:none;position:absolute;inset:4px;background:#0f766e15;border:1px solid #0f766e44;border-radius:4px;align-items:center;justify-content:center;flex-direction:column;gap:2px">
+            <div style="font-size:9px;color:#0f766e">Editar</div>
+            <div style="font-size:11px;font-family:'Fira Code',monospace;color:#0f766e;font-weight:600">$${price}</div>
+          </div>`;
+
+        cell.addEventListener('mouseenter', () => {
+          cell.querySelector('.price-normal').style.display = 'none';
+          cell.querySelector('.price-hover').style.display = 'flex';
+        });
+        cell.addEventListener('mouseleave', () => {
+          cell.querySelector('.price-normal').style.display = 'block';
+          cell.querySelector('.price-hover').style.display = 'none';
+        });
+        cell.addEventListener('click', () => openModal(room, day, price));
+      }
+
+      row.appendChild(cell);
+    }
+    body.appendChild(row);
+  });
+  wrap.appendChild(body);
+}
+
+let currentRoom = null, currentDay = null;
+
+function openModal(room, day, price) {
+  currentRoom = room; currentDay = day;
+  const dow = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][(day + 1) % 7];
+  document.getElementById('modalTitle').textContent = `Editar precio — Hab. ${room.num}`;
+  document.getElementById('modalSub').textContent = `${dow} ${day} de junio · ${room.type}`;
+  document.getElementById('basePrice').textContent = `$${room.base}/noche`;
+  document.getElementById('priceInput').value = price;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function savePrice() {
+  const val = parseInt(document.getElementById('priceInput').value);
+  if (!isNaN(val) && val > 0) {
+    customPrices[getKey(currentRoom.num, currentDay)] = val;
+    closeModal();
+    document.getElementById('calWrapper').innerHTML = '';
+    buildCalendar();
+  }
+}
+
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+document.querySelectorAll('.chip').forEach(c => {
+  c.addEventListener('click', () => {
+    c.closest('.chip-row').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+  });
+});
+
+buildCalendar();
+</script>
+</body>
+</html>

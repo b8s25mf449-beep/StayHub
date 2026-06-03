@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StayHub</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Fira Sans',sans-serif;background:#080c12;color:#fff;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.app{display:flex;flex:1;overflow:hidden}
+.sidebar{width:56px;background:#0d1117;border-right:1px solid #1a2535;display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:4px;flex-shrink:0}
+.s-logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#0f766e,#14b8a6);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;margin-bottom:16px;cursor:pointer;color:#fff}
+.nav{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#3a4a5c;font-size:15px;position:relative;transition:all .15s;user-select:none}
+.nav:hover{background:#1a2035;color:#ccc}
+.nav.on{background:#0f766e22;color:#0f766e}
+.nav.on::before{content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:20px;background:#0f766e;border-radius:0 2px 2px 0}
+.sep{width:28px;height:1px;background:#1a2535;margin:8px 0}
+.sbot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:4px}
+.avt{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0f766e,#14b8a6);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer}
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.sc{display:none;flex:1;overflow-y:auto;padding:24px;flex-direction:column}
+.sc.on{display:flex}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-shrink:0}
+.ph h2{font-size:18px;font-weight:600}
+.dl{font-size:12px;color:#4a5a6c;margin-bottom:4px}
+.hr{display:flex;gap:8px;align-items:center}
+.btn{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:inherit;transition:all .15s;white-space:nowrap}
+.bp{background:#0f766e;color:#fff}
+.bp:hover{background:#0d6962}
+.bg{background:#1a2035;color:#ccc;border:1px solid #1e2d40}
+.bg:hover{background:#1e2840}
+.bv{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff}
+.bv:hover{opacity:.9}
+.bsm{padding:5px 10px;font-size:11px;border-radius:6px}
+.search{background:#1a2035;border:1px solid #1e2d40;border-radius:8px;padding:8px 12px;font-size:12px;color:#ccc;width:180px;font-family:inherit;outline:none}
+.search::placeholder{color:#3a4a5c}
+.card{background:#0f1520;border:1px solid #1a2535;border-radius:12px;padding:18px}
+.card h3{font-size:11px;font-weight:600;color:#4a5a6c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.sg{display:grid;gap:14px;margin-bottom:20px;flex-shrink:0}
+.sg4{grid-template-columns:repeat(4,1fr)}
+.sg3{grid-template-columns:repeat(3,1fr)}
+.stat{background:#0f1520;border:1px solid #1a2535;border-radius:12px;padding:16px 18px}
+.stat.hl{border-color:#0f766e44;background:#0f766e08}
+.sl{font-size:11px;color:#4a5a6c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.sv{font-size:26px;font-weight:700;font-family:'Fira Code',monospace}
+.stat.hl .sv{color:#14b8a6}
+.ss{font-size:11px;margin-top:6px;color:#4a5a6c}
+.up{color:#0f766e}
+.bdg{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.cg{background:#0f766e22;color:#0f766e}
+.cb{background:#0369a122;color:#38bdf8}
+.co{background:#d9770622;color:#fb923c}
+.cr{background:#dc262622;color:#f87171}
+.ck{background:#1a2535;color:#4a5a6c}
+.cv{background:#7c3aed22;color:#a78bfa}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:11px;color:#4a5a6c;text-transform:uppercase;letter-spacing:.4px;padding:10px 14px;text-align:left;background:#0d1117;border-bottom:1px solid #1a2535}
+.tbl td{padding:11px 14px;font-size:13px;color:#ccc;border-bottom:1px solid #0f1520}
+.tbl tbody tr:hover td{background:#0f1520}
+.mn{font-family:'Fira Code',monospace;font-size:11px;color:#4a5a6c}
+.chart{height:120px}
+.gr{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #1a2535}
+.gav{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.rg{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.rc{border-radius:8px;padding:10px 6px;text-align:center;cursor:pointer;transition:transform .15s}
+.rc:hover{transform:scale(1.05)}
+.rn{font-size:14px;font-weight:700;font-family:'Fira Code',monospace}
+.rt{font-size:9px;margin-top:2px;opacity:.7}
+.rav{background:#0f766e15;border:1px solid #0f766e44;color:#0f766e}
+.roc{background:#0369a115;border:1px solid #0369a144;color:#38bdf8}
+.rcl{background:#d9770615;border:1px solid #d9770644;color:#fb923c}
+.rma{background:#dc262615;border:1px solid #dc262644;color:#f87171}
+.fc{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;flex-shrink:0}
+.fch{padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid #1e2d40;background:#1a2035;color:#666;transition:all .15s}
+.fch.on{background:#0f766e22;color:#0f766e;border-color:#0f766e44}
+.cal-cont{flex:1;overflow:auto}
+.cal-wrap{background:#0f1520;border:1px solid #1a2535;border-radius:12px;overflow:hidden;min-width:860px}
+/* Price modal */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.ov.open{display:flex}
+.modal{background:#141820;border:1px solid #1e2d40;border-radius:14px;padding:24px;width:360px}
+.mf{margin-bottom:14px}
+.mf label{font-size:11px;color:#4a5a6c;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
+.mf input{width:100%;background:#0d1117;border:1px solid #1e2d40;border-radius:7px;padding:10px 12px;font-size:15px;color:#fff;font-family:'Fira Code',monospace;outline:none}
+.mf input:focus{border-color:#0f766e}
+.cpr{display:flex;gap:6px;flex-wrap:wrap}
+.ch{padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer;background:#1a2035;color:#666;border:1px solid #1e2d40;transition:all .15s}
+.ch.on,.ch:hover{background:#0f766e22;color:#0f766e;border-color:#0f766e44}
+/* Slide-over */
+#rov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;backdrop-filter:blur(2px)}
+#rpan{position:fixed;top:0;right:-540px;width:540px;height:100vh;background:#141820;border-left:1px solid #1e2d40;z-index:401;display:flex;flex-direction:column;transition:right .3s cubic-bezier(.4,0,.2,1)}
+#rpan.open{right:0}
+.rph{padding:20px 24px;border-bottom:1px solid #1e2d40;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.rpst{padding:14px 24px;border-bottom:1px solid #1a2535;display:flex;align-items:center;flex-shrink:0}
+.rpb{flex:1;overflow-y:auto;padding:22px 24px}
+.rpf{padding:14px 24px;border-top:1px solid #1e2d40;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.fi{margin-bottom:12px}
+.fi label{font-size:11px;color:#4a5a6c;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.fi input,.fi select{width:100%;background:#0d1117;border:1px solid #1e2d40;border-radius:7px;padding:9px 10px;font-size:13px;color:#ccc;font-family:inherit;outline:none;transition:border .15s}
+.fi input:focus,.fi select:focus{border-color:#0f766e55}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#141820;border:1px solid #1e2d40;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);max-width:360px;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1;pointer-events:auto}
+.tic{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="s-logo">S</div>
+    <div class="nav on" onclick="go('dashboard',this)" title="Dashboard">⊞</div>
+    <div class="nav" onclick="go('reservations',this)" title="Reservas">◫</div>
+    <div class="nav" onclick="go('calendar',this)" title="Calendario">▦</div>
+    <div class="nav" onclick="go('rooms',this)" title="Habitaciones">⊟</div>
+    <div class="nav" onclick="go('guests',this)" title="Huéspedes">◎</div>
+    <div class="nav" onclick="go('payments',this)" title="Pagos">◈</div>
+    <div class="sep"></div>
+    <div class="sbot">
+      <div class="nav" title="Config">⊕</div>
+      <div class="avt">D</div>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="sc on" id="sc-dashboard">
+      <div class="ph">
+        <div><div class="dl">Lunes 2 de junio, 2026</div><h2>Buenos días, Admin 👋</h2></div>
+        <div class="hr"><button class="btn bg">Exportar</button><button class="btn bp" onclick="openRes()">+ Nueva reserva</button></div>
+      </div>
+      <div class="sg sg4">
+        <div class="stat hl"><div class="sl">Ocupación hoy</div><div class="sv">87%</div><div class="ss"><span class="up">↑ +4%</span> vs ayer</div></div>
+        <div class="stat"><div class="sl">Habitaciones libres</div><div class="sv">6</div><div class="ss">de 42 totales</div></div>
+        <div class="stat"><div class="sl">Check-ins hoy</div><div class="sv">8</div><div class="ss"><span class="up">3 completados</span></div></div>
+        <div class="stat"><div class="sl">Ingresos del mes</div><div class="sv">$48.2k</div><div class="ss"><span class="up">↑ +12%</span></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px">
+        <div class="card"><h3>Ingresos — últimos 14 días</h3><div class="chart"><svg width="100%" height="100%" viewBox="0 0 400 100" preserveAspectRatio="none"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f766e" stop-opacity=".3"/><stop offset="100%" stop-color="#0f766e" stop-opacity="0"/></linearGradient></defs><path d="M0,75 C30,65 60,50 90,48 C120,46 150,60 180,52 C210,44 240,30 270,25 C300,20 330,28 400,8 L400,100 L0,100Z" fill="url(#g1)"/><path d="M0,75 C30,65 60,50 90,48 C120,46 150,60 180,52 C210,44 240,30 270,25 C300,20 330,28 400,8" fill="none" stroke="#0f766e" stroke-width="2"/></svg></div></div>
+        <div class="card"><h3>Check-ins pendientes</h3>
+          <div class="gr"><div class="gav" style="background:#0f766e22;color:#0f766e">MG</div><div style="flex:1"><div style="font-size:13px;font-weight:500">María González</div><div style="font-size:11px;color:#4a5a6c">Hab. 204 · 14:00hs</div></div><span class="bdg cb">Hoy</span></div>
+          <div class="gr"><div class="gav" style="background:#0369a122;color:#38bdf8">JR</div><div style="flex:1"><div style="font-size:13px;font-weight:500">Juan Rodríguez</div><div style="font-size:11px;color:#4a5a6c">Hab. 312 · 15:30hs</div></div><span class="bdg cb">Hoy</span></div>
+          <div class="gr"><div class="gav" style="background:#7c3aed22;color:#a78bfa">AS</div><div style="flex:1"><div style="font-size:13px;font-weight:500">Ana Sánchez</div><div style="font-size:11px;color:#4a5a6c">Hab. 108 · 16:00hs</div></div><span class="bdg co">Tarde</span></div>
+        </div>
+      </div>
+      <div class="card" style="padding:0"><table class="tbl"><thead><tr><th style="padding-left:18px">Confirmación</th><th>Huésped</th><th>Hab.</th><th>Check-in</th><th>Check-out</th><th>Total</th><th>Estado</th></tr></thead><tbody>
+        <tr><td class="mn" style="padding-left:18px">SH-M3X8-A1B2</td><td>María González</td><td>204</td><td>10 Jun</td><td>13 Jun</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$435</td><td><span class="bdg cg">Confirmada</span></td></tr>
+        <tr><td class="mn" style="padding-left:18px">SH-N4Y9-C3D4</td><td>Juan Rodríguez</td><td>312</td><td>02 Jun</td><td>04 Jun</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$290</td><td><span class="bdg cb">Check-in</span></td></tr>
+        <tr><td class="mn" style="padding-left:18px">SH-P5Z0-E5F6</td><td>Ana Sánchez</td><td>108</td><td>02 Jun</td><td>07 Jun</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$726</td><td><span class="bdg co">Pendiente</span></td></tr>
+      </tbody></table></div>
+    </div>
+
+    <!-- RESERVAS -->
+    <div class="sc" id="sc-reservations">
+      <div class="ph"><h2>Reservas</h2><div class="hr"><input class="search" placeholder="Buscar..."><button class="btn bg">Filtros</button><button class="btn bp" onclick="openRes()">+ Nueva reserva</button></div></div>
+      <div class="fc">
+        <div class="fch on" onclick="fchSel(this)">Todas (48)</div>
+        <div class="fch" onclick="fchSel(this)">Confirmadas (31)</div>
+        <div class="fch" onclick="fchSel(this)">Pendientes (8)</div>
+        <div class="fch" onclick="fchSel(this)">Check-in hoy (8)</div>
+        <div class="fch" onclick="fchSel(this)">Canceladas (1)</div>
+      </div>
+      <div class="card" style="padding:0;flex:1"><table class="tbl"><thead><tr><th style="padding-left:18px">Confirmación</th><th>Huésped</th><th>Hab.</th><th>Check-in</th><th>Check-out</th><th>N</th><th>Total</th><th>Fuente</th><th>Estado</th><th></th></tr></thead><tbody>
+        <tr><td class="mn" style="padding-left:18px">SH-M3X8-A1B2</td><td>María González</td><td>204</td><td>10 Jun</td><td>13 Jun</td><td>3</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$435</td><td><span class="bdg ck">Directo</span></td><td><span class="bdg cg">Confirmada</span></td><td><div style="display:flex;gap:4px"><button class="btn bg bsm">Ver</button><button class="btn bv bsm" onclick="showToast('María González','204','Doble',false)">📄 Cotizar</button></div></td></tr>
+        <tr><td class="mn" style="padding-left:18px">SH-N4Y9-C3D4</td><td>Juan Rodríguez</td><td>312</td><td>02 Jun</td><td>04 Jun</td><td>2</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$290</td><td><span class="bdg ck">Booking</span></td><td><span class="bdg cb">Check-in</span></td><td><div style="display:flex;gap:4px"><button class="btn bg bsm">Ver</button><button class="btn bv bsm" onclick="showToast('Juan Rodríguez','312','Doble',false)">📄 Cotizar</button></div></td></tr>
+        <tr><td class="mn" style="padding-left:18px">SH-P5Z0-E5F6</td><td>Ana Sánchez</td><td>108</td><td>02 Jun</td><td>07 Jun</td><td>5</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$726</td><td><span class="bdg ck">Directo</span></td><td><span class="bdg co">Pendiente</span></td><td><div style="display:flex;gap:4px"><button class="btn bg bsm">Ver</button><button class="btn bv bsm" onclick="showToast('Ana Sánchez','108','Doble',false)">📄 Cotizar</button></div></td></tr>
+        <tr><td class="mn" style="padding-left:18px">SH-Q6A1-G7H8</td><td>Pedro López</td><td>401</td><td>03 Jun</td><td>06 Jun</td><td>3</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$617</td><td><span class="bdg ck">Airbnb</span></td><td><span class="bdg cg">Confirmada</span></td><td><div style="display:flex;gap:4px"><button class="btn bg bsm">Ver</button><button class="btn bv bsm" onclick="showToast('Pedro López','401','Suite',false)">📄 Cotizar</button></div></td></tr>
+      </tbody></table></div>
+    </div>
+
+    <!-- CALENDARIO -->
+    <div class="sc" id="sc-calendar">
+      <div class="ph" style="flex-shrink:0"><h2>Calendario de ocupación</h2>
+        <div class="hr">
+          <div style="display:flex;background:#1a2035;border-radius:7px;border:1px solid #1e2d40;overflow:hidden"><button class="btn" style="background:#0f766e22;color:#0f766e;border-radius:0">Vista precios</button><button class="btn" style="background:none;color:#666;border-radius:0">Vista reservas</button></div>
+          <button class="btn bg">◀ Mayo</button><span style="font-size:13px;font-weight:600;padding:0 4px">Junio 2026</span><button class="btn bg">Julio ▶</button>
+          <button class="btn bp">+ Regla de precio</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;font-size:11px;color:#4a5a6c;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#0f766e33;border:1px solid #0f766e55"></div>Reservada</div>
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:2px;background:#1a2535;border:1px solid #1e2d40"></div>Libre — click para editar precio</div>
+        <div style="margin-left:auto;color:#0f766e">💡 Click en celda libre para editar precio</div>
+      </div>
+      <div class="cal-cont"><div class="cal-wrap" id="calWrap"></div></div>
+    </div>
+
+    <!-- HABITACIONES -->
+    <div class="sc" id="sc-rooms">
+      <div class="ph"><h2>Habitaciones</h2><div class="hr"><span class="bdg cg" style="padding:5px 10px">● Libre (6)</span><span class="bdg cb" style="padding:5px 10px">● Ocupada (31)</span><span class="bdg co" style="padding:5px 10px">● Limpieza (3)</span><span class="bdg cr" style="padding:5px 10px">● Mantenimiento (2)</span></div></div>
+      <div class="card" style="margin-bottom:14px"><h3>Planta Baja</h3><div class="rg">
+        <div class="rc rav"><div class="rn">101</div><div class="rt">SIMPLE</div></div>
+        <div class="rc roc"><div class="rn">102</div><div class="rt">DOBLE</div></div>
+        <div class="rc roc"><div class="rn">103</div><div class="rt">DOBLE</div></div>
+        <div class="rc rcl"><div class="rn">104</div><div class="rt">SUITE</div></div>
+        <div class="rc roc"><div class="rn">105</div><div class="rt">SIMPLE</div></div>
+        <div class="rc rav"><div class="rn">106</div><div class="rt">SIMPLE</div></div>
+        <div class="rc roc"><div class="rn">107</div><div class="rt">DOBLE</div></div>
+        <div class="rc rma"><div class="rn">108</div><div class="rt">DOBLE</div></div>
+      </div></div>
+      <div class="card"><h3>Primer Piso</h3><div class="rg">
+        <div class="rc roc"><div class="rn">201</div><div class="rt">DOBLE</div></div>
+        <div class="rc roc"><div class="rn">202</div><div class="rt">SUITE</div></div>
+        <div class="rc rav"><div class="rn">203</div><div class="rt">SIMPLE</div></div>
+        <div class="rc roc"><div class="rn">204</div><div class="rt">DOBLE</div></div>
+        <div class="rc rcl"><div class="rn">205</div><div class="rt">DOBLE</div></div>
+        <div class="rc roc"><div class="rn">206</div><div class="rt">SIMPLE</div></div>
+        <div class="rc roc"><div class="rn">207</div><div class="rt">SUITE</div></div>
+        <div class="rc rav"><div class="rn">208</div><div class="rt">DOBLE</div></div>
+      </div></div>
+    </div>
+
+    <!-- HUÉSPEDES -->
+    <div class="sc" id="sc-guests">
+      <div class="ph"><h2>Huéspedes</h2><div class="hr"><input class="search" placeholder="Buscar..."><button class="btn bp">+ Nuevo huésped</button></div></div>
+      <div class="card" style="padding:0;flex:1"><table class="tbl"><thead><tr><th style="padding-left:18px">Nombre</th><th>Email</th><th>Teléfono</th><th>Estancias</th><th>Total gastado</th><th>Estado</th><th></th></tr></thead><tbody>
+        <tr><td style="padding-left:18px"><div style="display:flex;align-items:center;gap:10px"><div class="gav" style="width:30px;height:30px;background:#0f766e22;color:#0f766e;font-size:10px">MG</div>María González</div></td><td class="mn">m.gonzalez@email.com</td><td class="mn">+54 11 4521-3344</td><td>12</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$4,820</td><td><span class="bdg cv">VIP</span></td><td><button class="btn bg bsm">Ver perfil</button></td></tr>
+        <tr><td style="padding-left:18px"><div style="display:flex;align-items:center;gap:10px"><div class="gav" style="width:30px;height:30px;background:#0369a122;color:#38bdf8;font-size:10px">JR</div>Juan Rodríguez</div></td><td class="mn">jrodriguez@gmail.com</td><td class="mn">+54 9 11 6677-8899</td><td>3</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$960</td><td><span class="bdg ck">Activo</span></td><td><button class="btn bg bsm">Ver perfil</button></td></tr>
+        <tr><td style="padding-left:18px"><div style="display:flex;align-items:center;gap:10px"><div class="gav" style="width:30px;height:30px;background:#7c3aed22;color:#a78bfa;font-size:10px">AS</div>Ana Sánchez</div></td><td class="mn">asanchez@hotmail.com</td><td class="mn">+54 351 422-1133</td><td>7</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$2,310</td><td><span class="bdg cg">Activo</span></td><td><button class="btn bg bsm">Ver perfil</button></td></tr>
+      </tbody></table></div>
+    </div>
+
+    <!-- PAGOS -->
+    <div class="sc" id="sc-payments">
+      <div class="ph"><h2>Pagos</h2><div class="hr"><button class="btn bg">Exportar CSV</button><button class="btn bp">+ Registrar pago</button></div></div>
+      <div class="sg sg3" style="flex-shrink:0">
+        <div class="stat hl"><div class="sl">Cobrado este mes</div><div class="sv">$48.2k</div><div class="ss"><span class="up">↑ +12%</span></div></div>
+        <div class="stat"><div class="sl">Pendiente de cobro</div><div class="sv">$3.4k</div><div class="ss" style="color:#fb923c">4 pagos pendientes</div></div>
+        <div class="stat"><div class="sl">Reembolsos</div><div class="sv">$280</div></div>
+      </div>
+      <div class="card" style="padding:0;flex:1"><table class="tbl"><thead><tr><th style="padding-left:18px">Reserva</th><th>Huésped</th><th>Monto</th><th>Método</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody>
+        <tr><td class="mn" style="padding-left:18px">SH-M3X8-A1B2</td><td>María González</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$435</td><td>Crédito · Stripe</td><td class="mn">10 Jun</td><td><span class="bdg cg">Completado</span></td><td><button class="btn bg bsm">Ver</button></td></tr>
+        <tr><td class="mn" style="padding-left:18px">SH-N4Y9-C3D4</td><td>Juan Rodríguez</td><td style="color:#fb923c;font-family:'Fira Code',monospace">$290</td><td>Transferencia</td><td class="mn">01 Jun</td><td><span class="bdg co">Pendiente</span></td><td><button class="btn bg bsm">Ver</button></td></tr>
+        <tr><td class="mn" style="padding-left:18px">SH-P5Z0-E5F6</td><td>Ana Sánchez</td><td style="color:#0f766e;font-family:'Fira Code',monospace">$726</td><td>MercadoPago</td><td class="mn">01 Jun</td><td><span class="bdg cg">Completado</span></td><td><button class="btn bg bsm">Ver</button></td></tr>
+      </tbody></table></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PRICE MODAL -->
+<div class="ov" id="priceModal">
+  <div class="modal">
+    <div style="font-size:15px;font-weight:600;margin-bottom:3px" id="mTitle">Editar precio</div>
+    <div style="font-size:12px;color:#4a5a6c;margin-bottom:14px" id="mSub">Hab. 101</div>
+    <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#0f766e0a;border:1px solid #0f766e22;border-radius:6px;font-size:11px;color:#0f766e;margin-bottom:14px">💰 Precio base: <strong id="mBase">$120/noche</strong></div>
+    <div class="mf"><label>Precio para esta noche</label><input type="number" id="mPrice" value="150"></div>
+    <div class="mf"><label>Aplicar a</label><div class="cpr">
+      <div class="ch on" onclick="chSel(this,this.closest('.cpr'))">Solo esta noche</div>
+      <div class="ch" onclick="chSel(this,this.closest('.cpr'))">Fin de semana</div>
+      <div class="ch" onclick="chSel(this,this.closest('.cpr'))">Toda la semana</div>
+      <div class="ch" onclick="chSel(this,this.closest('.cpr'))">Todo el mes</div>
+    </div></div>
+    <div style="height:1px;background:#1e2d40;margin:14px 0"></div>
+    <div class="mf"><label>Motivo (opcional)</label><div class="cpr">
+      <div class="ch" onclick="chSel(this,this.closest('.cpr'))">Temporada alta</div>
+      <div class="ch" onclick="chSel(this,this.closest('.cpr'))">Evento local</div>
+      <div class="ch" onclick="chSel(this,this.closest('.cpr'))">Fin de semana</div>
+      <div class="ch" onclick="chSel(this,this.closest('.cpr'))">Promoción</div>
+    </div></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn bg" onclick="closePrice()">Cancelar</button>
+      <button class="btn bp" onclick="savePrice()">Guardar precio</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESERVATION PANEL -->
+<div id="rov" onclick="closeRes()"></div>
+<div id="rpan">
+  <div class="rph">
+    <div>
+      <div style="font-size:11px;color:#4a5a6c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Nueva reserva</div>
+      <div style="font-size:15px;font-weight:600">Hotel Travertino</div>
+    </div>
+    <button class="btn bg" onclick="closeRes()">✕</button>
+  </div>
+  <div class="rpst" id="stepBar"></div>
+  <div class="rpb" id="rpBody">
+    <div id="rs1">
+      <div style="font-size:13px;font-weight:600;color:#ccc;margin-bottom:12px">¿Quién se hospeda?</div>
+      <div style="position:relative;margin-bottom:10px">
+        <input id="guestSearch" placeholder="Buscar nombre o email..." oninput="filterGuests(this.value)"
+          style="width:100%;background:#0d1117;border:1px solid #1e2d40;border-radius:8px;padding:9px 12px 9px 34px;font-size:13px;color:#ccc;font-family:'Fira Sans',sans-serif;outline:none">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#3a4a5c">🔍</span>
+      </div>
+      <div id="guestList" style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px"></div>
+      <div style="border-top:1px solid #1a2535;padding-top:14px">
+        <div style="font-size:11px;color:#4a5a6c;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">O registrar huésped nuevo</div>
+        <div class="g2">
+          <div class="fi"><label>Nombre</label><input placeholder="Juan"></div>
+          <div class="fi"><label>Apellido</label><input placeholder="García"></div>
+          <div class="fi" style="grid-column:span 2"><label>Email</label><input placeholder="juan@email.com"></div>
+          <div class="fi"><label>Teléfono</label><input placeholder="+54 11..."></div>
+          <div class="fi"><label>Documento</label><input placeholder="DNI / Pasaporte"></div>
+        </div>
+      </div>
+    </div>
+    <div id="rs2" style="display:none">
+      <div style="font-size:13px;font-weight:600;color:#ccc;margin-bottom:6px">¿Cuándo y cuántos?</div>
+      <div style="font-size:12px;color:#4a5a6c;margin-bottom:16px">Las habitaciones se filtrarán por fechas y capacidad.</div>
+      <div class="g2">
+        <div class="fi"><label>Check-in</label><input type="date" id="ciDate" value="2026-06-10" style="font-family:'Fira Code',monospace;color-scheme:dark"></div>
+        <div class="fi"><label>Check-out</label><input type="date" id="coDate" value="2026-06-13" style="font-family:'Fira Code',monospace;color-scheme:dark"></div>
+        <div class="fi"><label>Adultos</label><input type="number" id="adultos" value="2" min="1" max="10" style="font-family:'Fira Code',monospace"></div>
+        <div class="fi"><label>Niños</label><input type="number" id="ninos" value="0" min="0" style="font-family:'Fira Code',monospace"></div>
+      </div>
+      <div class="fi"><label>Fuente</label><select id="resSource"><option>Directo</option><option>Booking.com</option><option>Airbnb</option><option>Expedia</option><option>Teléfono</option><option>Walk-in</option></select></div>
+    </div>
+    <div id="rs3" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:600;color:#ccc">Habitaciones disponibles</div>
+        <div id="availCount" style="font-size:11px;color:#0f766e;background:#0f766e15;padding:3px 10px;border-radius:4px"></div>
+      </div>
+      <div id="filterInfo" style="font-size:12px;color:#4a5a6c;margin-bottom:14px"></div>
+      <div id="roomPicker" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+    </div>
+    <div id="rs4" style="display:none">
+      <div style="font-size:13px;font-weight:600;color:#ccc;margin-bottom:14px">Resumen de la reserva</div>
+      <div style="background:#0d1117;border:1px solid #1a2535;border-radius:10px;padding:16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #1a2535">
+          <div id="s4av" style="width:36px;height:36px;border-radius:50%;background:#0f766e22;color:#0f766e;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">MG</div>
+          <div><div id="s4nm" style="font-size:14px;font-weight:600;color:#fff">María González</div><div id="s4em" style="font-size:11px;color:#4a5a6c">m.gonzalez@email.com</div></div>
+        </div>
+        <div class="g2" style="font-size:12px">
+          <div><div style="color:#4a5a6c;margin-bottom:3px">Habitación</div><div id="s4rm" style="color:#fff;font-family:'Fira Code',monospace;font-weight:600">204 — DOBLE</div></div>
+          <div><div style="color:#4a5a6c;margin-bottom:3px">Noches</div><div id="s4ni" style="color:#fff;font-family:'Fira Code',monospace;font-weight:600">3</div></div>
+          <div><div style="color:#4a5a6c;margin-bottom:3px">Check-in</div><div id="s4ci" style="color:#fff;font-weight:600">10 Jun 2026</div></div>
+          <div><div style="color:#4a5a6c;margin-bottom:3px">Check-out</div><div id="s4co" style="color:#fff;font-weight:600">13 Jun 2026</div></div>
+        </div>
+      </div>
+      <div style="background:#0f766e0a;border:1px solid #0f766e33;border-radius:10px;padding:16px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#ccc;margin-bottom:6px"><span id="s4bd">3 noches × $120</span><span id="s4ba" style="font-family:'Fira Code',monospace">$360</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#ccc;margin-bottom:6px"><span>Impuestos (21%)</span><span id="s4ta" style="font-family:'Fira Code',monospace">$75.60</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:#14b8a6;padding-top:8px;border-top:1px solid #0f766e33"><span>Total</span><span id="s4tt" style="font-family:'Fira Code',monospace">$435.60</span></div>
+      </div>
+      <div class="fi"><label>Notas (opcional)</label><input placeholder="Ej: Cliente VIP, piso alto..."></div>
+      <div id="s4ok" style="display:none;background:#0f766e15;border:1px solid #0f766e44;border-radius:10px;padding:16px;text-align:center;margin-top:12px">
+        <div style="font-size:22px;margin-bottom:8px">✅</div>
+        <div style="font-size:14px;font-weight:600;color:#0f766e;margin-bottom:4px">¡Reserva confirmada!</div>
+        <div id="s4cn" style="font-size:12px;color:#4a5a6c;font-family:'Fira Code',monospace">SH-XXXX-XXXX</div>
+        <div style="font-size:11px;color:#a78bfa;margin-top:6px">Confirmación generada en Canva ✓</div>
+      </div>
+    </div>
+  </div>
+  <div class="rpf">
+    <button id="btnBack" class="btn bg" onclick="resBack()" style="display:none">← Volver</button>
+    <div style="flex:1"></div>
+    <button id="btnQuote" class="btn bv" onclick="doQuote()" style="display:none">📄 Cotización</button>
+    <button id="btnNext" class="btn bp" onclick="resNext()">Siguiente →</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="tic" id="ticon" style="background:linear-gradient(135deg,#7c3aed,#a855f7)">📄</div>
+  <div style="flex:1">
+    <div id="ttitle" style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px">Cotización generada en Canva</div>
+    <div id="tguest" style="font-size:11px;color:#4a5a6c">Para María González · Hab. 204</div>
+    <a href="https://www.canva.com/d/OXFoagGdB8nPrbm" target="_blank" style="font-size:11px;color:#a78bfa;display:block;margin-top:3px">Abrir en Canva →</a>
+  </div>
+  <button onclick="hideToast()" style="background:none;border:none;color:#4a5a6c;cursor:pointer;font-size:16px;padding:4px">✕</button>
+</div>
+
+<script>
+// ── NAVIGATION ──
+function go(id, el) {
+  document.querySelectorAll('.sc').forEach(function(s){s.classList.remove('on');});
+  document.querySelectorAll('.nav').forEach(function(n){n.classList.remove('on');});
+  document.getElementById('sc-'+id).classList.add('on');
+  if (el) el.classList.add('on');
+  if (id==='calendar' && !window._calBuilt) { buildCal(); window._calBuilt=true; }
+}
+function fchSel(el) {
+  el.closest('.fc').querySelectorAll('.fch').forEach(function(c){c.classList.remove('on');});
+  el.classList.add('on');
+}
+function chSel(el, row) {
+  row.querySelectorAll('.ch').forEach(function(c){c.classList.remove('on');});
+  el.classList.add('on');
+}
+
+// ── TOAST ──
+var _tt;
+function showToast(g, r, t, isConf) {
+  clearTimeout(_tt);
+  var ic=document.getElementById('ticon');
+  var ti=document.getElementById('ttitle');
+  if (isConf) { ic.style.background='linear-gradient(135deg,#0f766e,#14b8a6)'; ic.textContent='📋'; ti.textContent='Confirmación generada en Canva'; }
+  else        { ic.style.background='linear-gradient(135deg,#7c3aed,#a855f7)'; ic.textContent='📄'; ti.textContent='Cotización generada en Canva'; }
+  document.getElementById('tguest').textContent='Para '+g+' · Hab. '+r+' '+t;
+  document.getElementById('toast').classList.add('show');
+  _tt=setTimeout(hideToast, 7000);
+}
+function hideToast(){ document.getElementById('toast').classList.remove('show'); }
+
+// ── PRICE MODAL ──
+var _pr=null, _pd=null, _cp={};
+var _cr=[
+  {num:'101',type:'SIMPLE',base:80},{num:'102',type:'DOBLE',base:120},
+  {num:'103',type:'DOBLE',base:120},{num:'104',type:'SUITE',base:220},
+  {num:'201',type:'SIMPLE',base:80},{num:'202',type:'DOBLE',base:120},
+  {num:'203',type:'SUITE',base:220},{num:'301',type:'DOBLE',base:130},
+  {num:'302',type:'SUITE',base:240}
+];
+var _cres={
+  '101':[[2,5,'MG',0],[7,9,'',1],[12,15,'',0]],
+  '102':[[3,7,'',0],[9,11,'',1],[13,16,'',0]],
+  '103':[[2,3,'',1],[5,9,'AS',0],[12,15,'',1]],
+  '104':[[4,7,'',0],[9,13,'',1]],
+  '201':[[2,5,'',0],[8,11,'',1],[13,15,'',0]],
+  '202':[[3,5,'',1],[7,12,'',0]],
+  '203':[[2,6,'JR',0],[10,14,'',1]],
+  '301':[[2,8,'',0],[10,13,'',1]],
+  '302':[[3,6,'',0],[8,10,'',1],[12,16,'',0]]
+};
+function openPrice(room, day, p) {
+  _pr=room; _pd=day;
+  var DOW=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  document.getElementById('mTitle').textContent='Editar precio — Hab. '+room.num;
+  document.getElementById('mSub').textContent=DOW[(day+1)%7]+' '+day+' de junio · '+room.type;
+  document.getElementById('mBase').textContent='$'+room.base+'/noche';
+  document.getElementById('mPrice').value=p;
+  document.getElementById('priceModal').classList.add('open');
+}
+function closePrice(){ document.getElementById('priceModal').classList.remove('open'); }
+function savePrice(){
+  var v=parseInt(document.getElementById('mPrice').value);
+  if (!isNaN(v)&&v>0){ _cp[_pr.num+'-'+_pd]=v; closePrice(); buildCal(); }
+}
+document.getElementById('priceModal').addEventListener('click',function(e){ if(e.target===this) closePrice(); });
+
+// ── CALENDAR ──
+function calPrice(num,day){
+  var k=num+'-'+day; if(_cp[k]) return _cp[k];
+  var r=_cr.find(function(x){return x.num===num;}); var dow=(day+1)%7;
+  return r.base+(dow===5||dow===6?30:0);
+}
+function calRes(num,day){
+  var list=_cres[num]||[];
+  for(var i=0;i<list.length;i++){ var s=list[i][0],e=list[i][1],n=list[i][2],t=list[i][3]; if(day>=s&&day<e) return {y:true,s:day===s,e:day===e-1,n:n,t:t}; }
+  return {y:false};
+}
+function buildCal(){
+  var wrap=document.getElementById('calWrap'); wrap.innerHTML='';
+  var days=[]; for(var i=0;i<16;i++) days.push(2+i);
+  var DOW=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  var cols='80px repeat(16,minmax(44px,1fr))';
+  var hd=document.createElement('div');
+  hd.style.cssText='display:grid;grid-template-columns:'+cols+';background:#0d1117;border-bottom:1px solid #1a2535;position:sticky;top:0;z-index:5';
+  var lh=document.createElement('div'); lh.style.cssText='padding:8px 12px;font-size:11px;color:#4a5a6c;font-weight:600;border-right:1px solid #1a2535'; lh.textContent='Hab.'; hd.appendChild(lh);
+  days.forEach(function(d){
+    var dw=DOW[(d+1)%7],wk=dw==='Sáb'||dw==='Dom';
+    var h=document.createElement('div'); h.style.cssText='padding:6px 2px;text-align:center;border-right:1px solid #1a2535;'+(wk?'background:#ffffff03;':'');
+    h.innerHTML='<div style="font-size:10px;color:'+(wk?'#3a4a5c':'#4a5a6c')+'">'+dw+'</div><div style="font-size:13px;font-weight:600;color:'+(d===2?'#0f766e':'#ccc')+';margin-top:2px">'+d+'</div>';
+    hd.appendChild(h);
+  });
+  wrap.appendChild(hd);
+  _cr.forEach(function(room){
+    var row=document.createElement('div'); row.style.cssText='display:grid;grid-template-columns:'+cols+';border-bottom:1px solid #0d1117';
+    var lb=document.createElement('div'); lb.style.cssText='padding:0 10px;display:flex;flex-direction:column;justify-content:center;background:#0d1117;border-right:1px solid #1a2535;min-height:52px';
+    lb.innerHTML='<div style="font-size:13px;font-weight:700;font-family:\'Fira Code\',monospace;color:#ccc">'+room.num+'</div><div style="font-size:9px;color:#3a4a5c;margin-top:2px">'+room.type+'</div><div style="font-size:10px;color:#0f766e;font-family:\'Fira Code\',monospace">$'+room.base+'</div>';
+    row.appendChild(lb);
+    days.forEach(function(day){
+      var ri=calRes(room.num,day), p=calPrice(room.num,day), ic=!!_cp[room.num+'-'+day];
+      var dw=(day+1)%7,wk=dw===0||dw===6;
+      var cell=document.createElement('div');
+      cell.style.cssText='border-right:1px solid #0d1117;min-height:52px;position:relative;cursor:pointer;transition:background .12s;'+(wk&&!ri.y?'background:#ffffff03;':'');
+      if(ri.y){
+        var col=ri.t===0?'#0f766e':'#38bdf8', bg=ri.t===0?'#0f766e15':'#0369a115';
+        cell.style.background=bg;
+        if(ri.s) cell.style.borderLeft='2px solid '+col;
+        if(ri.e) cell.style.borderRight='2px solid '+col;
+        cell.innerHTML=(ri.s&&ri.n?'<div style="position:absolute;top:5px;left:6px;right:4px;font-size:9px;color:'+col+';font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+ri.n+'</div>':'')+'<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:10px;font-family:\'Fira Code\',monospace;color:'+col+'88">$'+p+'</div>';
+      } else {
+        var pEl=document.createElement('div'); pEl.style.cssText='position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:10px;font-family:\'Fira Code\',monospace;color:'+(ic?'#0f766e':'#2a3a4a'); pEl.textContent='$'+p+(ic?' ✓':'');
+        var hEl=document.createElement('div'); hEl.style.cssText='display:none;position:absolute;inset:4px;background:#0f766e15;border:1px solid #0f766e44;border-radius:4px;align-items:center;justify-content:center;flex-direction:column;gap:2px'; hEl.innerHTML='<div style="font-size:9px;color:#0f766e">Editar</div><div style="font-size:12px;font-family:\'Fira Code\',monospace;color:#0f766e;font-weight:600">$'+p+'</div>';
+        cell.appendChild(pEl); cell.appendChild(hEl);
+        cell.addEventListener('mouseenter',function(){pEl.style.display='none';hEl.style.display='flex';});
+        cell.addEventListener('mouseleave',function(){pEl.style.display='block';hEl.style.display='none';});
+        (function(rm,dy,px){cell.addEventListener('click',function(){openPrice(rm,dy,px);});})(room,day,p);
+      }
+      row.appendChild(cell);
+    });
+    wrap.appendChild(row);
+  });
+}
+
+// ── RESERVATION ──
+var RG=[
+  {id:1,n:'María González',e:'m.gonzalez@email.com',i:'MG',c:'#0f766e',b:'VIP'},
+  {id:2,n:'Juan Rodríguez',e:'jrodriguez@gmail.com',i:'JR',c:'#38bdf8',b:''},
+  {id:3,n:'Ana Sánchez',e:'asanchez@hotmail.com',i:'AS',c:'#a78bfa',b:''},
+  {id:4,n:'Pedro López',e:'plopez@empresa.com',i:'PL',c:'#4a5a6c',b:''},
+  {id:5,n:'Carla Méndez',e:'cmendes@hotel.com',i:'CM',c:'#fb923c',b:''}
+];
+var RR=[
+  {num:'101',t:'SIMPLE',base:80,cap:2,s:'available'},
+  {num:'102',t:'DOBLE',base:120,cap:4,s:'occupied'},
+  {num:'103',t:'DOBLE',base:120,cap:4,s:'occupied'},
+  {num:'104',t:'SUITE',base:220,cap:6,s:'cleaning'},
+  {num:'106',t:'SIMPLE',base:80,cap:2,s:'available'},
+  {num:'203',t:'SIMPLE',base:80,cap:2,s:'available'},
+  {num:'208',t:'DOBLE',base:120,cap:4,s:'available'},
+  {num:'302',t:'SUITE',base:240,cap:6,s:'available'}
+];
+var _step=1,_sg=null,_sr=null,_conf=false,_ni=3,_sum=null;
+
+function openRes(){
+  _step=1;_sg=null;_sr=null;_conf=false;
+  document.getElementById('s4ok').style.display='none';
+  document.getElementById('guestSearch').value='';
+  document.getElementById('rov').style.display='block';
+  document.getElementById('rpan').classList.add('open');
+  renderGuests(RG);
+  showStep(1);
+  rFoot();
+}
+function closeRes(){
+  document.getElementById('rov').style.display='none';
+  document.getElementById('rpan').classList.remove('open');
+}
+function resNext(){
+  if(_conf){closeRes();return;}
+  if(_step===4){doConfirm();return;}
+  _step++;showStep(_step);rFoot();
+}
+function resBack(){
+  if(_step>1){_step--;showStep(_step);rFoot();}
+}
+function navStep(n){ if(n<_step){_step=n;showStep(n);rFoot();} }
+function showStep(n){
+  for(var i=1;i<=4;i++) document.getElementById('rs'+i).style.display=i===n?'block':'none';
+  renderStepBar();
+  if(n===3) buildRoomPicker();
+  if(n===4) buildSummary();
+}
+function renderStepBar(){
+  var L=['Huésped','Fechas','Habitación','Confirmar'];
+  var h='';
+  for(var i=1;i<=4;i++){
+    var done=i<_step,act=i===_step;
+    var bg=(done||act)?'#0f766e':'#1a2535', fc=(done||act)?'#fff':'#4a5a6c', lc=(done||act)?'#0f766e':'#4a5a6c';
+    h+='<div style="flex:1;text-align:center;cursor:pointer" onclick="navStep('+i+')">';
+    h+='<div style="width:22px;height:22px;border-radius:50%;background:'+bg+';color:'+fc+';font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 3px">'+(done?'✓':i)+'</div>';
+    h+='<div style="font-size:10px;color:'+lc+';font-weight:600">'+L[i-1]+'</div></div>';
+    if(i<4) h+='<div style="flex:1;height:1px;background:#1e2d40;margin-bottom:14px"></div>';
+  }
+  document.getElementById('stepBar').innerHTML=h;
+}
+function rFoot(){
+  document.getElementById('btnBack').style.display=_step>1?'inline-block':'none';
+  var qb=document.getElementById('btnQuote'),nb=document.getElementById('btnNext');
+  if(_conf){nb.textContent='✓ Cerrar';nb.className='btn bg';qb.style.display='none';}
+  else if(_step===4){nb.textContent='✓ Confirmar reserva';nb.className='btn bp';qb.style.display='inline-block';}
+  else{nb.textContent='Siguiente →';nb.className='btn bp';qb.style.display='none';}
+}
+function filterGuests(q){
+  var l=RG.filter(function(g){return !q||g.n.toLowerCase().indexOf(q.toLowerCase())>=0||g.e.toLowerCase().indexOf(q.toLowerCase())>=0;});
+  renderGuests(l);
+}
+function renderGuests(list){
+  document.getElementById('guestList').innerHTML=list.map(function(g){
+    var sel=_sg&&_sg.id===g.id;
+    return '<div onclick="pickG('+g.id+')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;border:1px solid '+(sel?'#0f766e':'#1e2d40')+';background:'+(sel?'#0f766e12':'#0d1117')+';cursor:pointer;transition:all .15s">'
+      +'<div style="width:32px;height:32px;border-radius:50%;background:'+g.c+'22;color:'+g.c+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">'+g.i+'</div>'
+      +'<div style="flex:1"><div style="font-size:13px;font-weight:500;color:#fff">'+g.n+'</div><div style="font-size:11px;color:#4a5a6c">'+g.e+'</div></div>'
+      +(g.b?'<span style="background:#7c3aed22;color:#a78bfa;padding:2px 7px;border-radius:4px;font-size:10px">'+g.b+'</span>':'')
+      +(sel?'<span style="color:#0f766e">✓</span>':'')+'</div>';
+  }).join('');
+}
+function pickG(id){ _sg=RG.find(function(g){return g.id===id;}); filterGuests(document.getElementById('guestSearch').value); }
+function buildRoomPicker(){
+  var adults=parseInt(document.getElementById('adultos').value)||2;
+  var ci=document.getElementById('ciDate').value||'2026-06-10';
+  var co=document.getElementById('coDate').value||'2026-06-13';
+  _ni=Math.max(1,Math.round((new Date(co)-new Date(ci))/864e5));
+  var av=RR.filter(function(r){return r.s==='available'&&r.cap>=adults;});
+  var un=RR.filter(function(r){return r.s!=='available'||r.cap<adults;});
+  document.getElementById('availCount').textContent=av.length+' disponibles';
+  document.getElementById('filterInfo').textContent='Para '+adults+' adulto'+(adults>1?'s':'')+' · '+_ni+' noche'+(_ni>1?'s':'')+' · '+ci+' → '+co;
+  document.getElementById('roomPicker').innerHTML=av.map(function(r){
+    var sel=_sr&&_sr.num===r.num, tot=r.base*_ni;
+    return '<div onclick="pickR(\''+r.num+'\')" style="padding:14px;border-radius:10px;border:2px solid '+(sel?'#0f766e':'#1e2d40')+';background:'+(sel?'#0f766e12':'#0d1117')+';cursor:pointer;transition:all .15s">'
+      +'<div style="display:flex;justify-content:space-between"><div>'
+      +'<div style="font-size:18px;font-weight:700;font-family:\'Fira Code\',monospace;color:'+(sel?'#14b8a6':'#ccc')+'">'+r.num+'</div>'
+      +'<div style="font-size:11px;color:#4a5a6c;margin-top:2px">'+r.t+' · max '+r.cap+' pers.</div></div>'
+      +(sel?'<span style="color:#0f766e;font-size:18px">✓</span>':'')+'</div>'
+      +'<div style="margin-top:10px;padding-top:10px;border-top:1px solid #1a2535">'
+      +'<div style="font-size:11px;color:#4a5a6c">$'+r.base+'/noche × '+_ni+' noches</div>'
+      +'<div style="font-size:16px;font-weight:700;font-family:\'Fira Code\',monospace;color:#0f766e;margin-top:3px">$'+tot+'</div></div>'
+      +'<div style="font-size:10px;margin-top:8px;color:#0f766e">● Disponible</div></div>';
+  }).concat(un.map(function(r){
+    var reason=r.s!=='available'?'Ocupada':'Cap. máx '+r.cap;
+    return '<div style="padding:14px;border-radius:10px;border:1px solid #1a2535;background:#0a0e14;opacity:.4;cursor:not-allowed">'
+      +'<div style="font-size:18px;font-weight:700;font-family:\'Fira Code\',monospace;color:#3a4a5c">'+r.num+'</div>'
+      +'<div style="font-size:11px;color:#3a4a5c;margin-top:2px">'+r.t+'</div>'
+      +'<div style="font-size:10px;margin-top:10px;color:#dc2626">✕ '+reason+'</div></div>';
+  })).join('');
+}
+function pickR(num){ _sr=RR.find(function(r){return r.num===num;}); buildRoomPicker(); }
+function buildSummary(){
+  var g=_sg||RG[0], r=_sr||RR[0];
+  var ci=document.getElementById('ciDate').value||'2026-06-10';
+  var co=document.getElementById('coDate').value||'2026-06-13';
+  var base=r.base*_ni, tax=+(base*.21).toFixed(2), tot=+(base+tax).toFixed(2);
+  var fmt=function(v){return '$'+v.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  var fd=function(s){return new Date(s).toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'});};
+  _sum={g:g,r:r,base:base,tax:tax,tot:tot};
+  document.getElementById('s4av').textContent=g.i;
+  document.getElementById('s4av').style.background=g.c+'22';
+  document.getElementById('s4av').style.color=g.c;
+  document.getElementById('s4nm').textContent=g.n;
+  document.getElementById('s4em').textContent=g.e;
+  document.getElementById('s4rm').textContent=r.num+' — '+r.t;
+  document.getElementById('s4ni').textContent=_ni;
+  document.getElementById('s4ci').textContent=fd(ci);
+  document.getElementById('s4co').textContent=fd(co);
+  document.getElementById('s4bd').textContent=_ni+' noche'+(_ni>1?'s':'')+' × $'+r.base;
+  document.getElementById('s4ba').textContent=fmt(base);
+  document.getElementById('s4ta').textContent=fmt(tax);
+  document.getElementById('s4tt').textContent=fmt(tot);
+}
+function doQuote(){
+  var s=_sum||{g:RG[0],r:RR[0]};
+  showToast(s.g.n,s.r.num,s.r.t,false);
+}
+function doConfirm(){
+  var num='SH-'+Math.random().toString(36).substr(2,4).toUpperCase()+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
+  document.getElementById('s4ok').style.display='block';
+  document.getElementById('s4cn').textContent=num;
+  _conf=true; rFoot();
+  var s=_sum||{g:RG[0],r:RR[0]};
+  setTimeout(function(){showToast(s.g.n,s.r.num,s.r.t,true);},600);
+}
+</script>
+</body>
+</html>
