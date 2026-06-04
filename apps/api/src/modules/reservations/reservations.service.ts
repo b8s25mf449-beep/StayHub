@@ -18,9 +18,10 @@ export class ReservationsService {
     return `SH-${Date.now().toString(36).toUpperCase()}-${randomUUID().split('-')[0].toUpperCase()}`;
   }
 
-  async checkAvailability(roomId: string, checkInDate: string, checkOutDate: string, excludeId?: string): Promise<void> {
+  async checkAvailability(tenantId: string, roomId: string, checkInDate: string, checkOutDate: string, excludeId?: string): Promise<void> {
     const qb = this.repo.createQueryBuilder('r')
       .where('r.room_id = :roomId', { roomId })
+      .andWhere('r.tenant_id = :tenantId', { tenantId })
       .andWhere('r.deleted_at IS NULL')
       .andWhere('r.status NOT IN (:...cancelled)', {
         cancelled: [ReservationStatus.CANCELLED, ReservationStatus.NO_SHOW],
@@ -35,7 +36,7 @@ export class ReservationsService {
   }
 
   async create(tenantId: string, dto: CreateReservationDto): Promise<Reservation> {
-    await this.checkAvailability(dto.roomId, dto.checkInDate, dto.checkOutDate);
+    await this.checkAvailability(tenantId, dto.roomId, dto.checkInDate, dto.checkOutDate);
 
     const stay = await this.pricingService.calculateStay(
       tenantId, dto.roomId, dto.checkInDate, dto.checkOutDate,
@@ -79,6 +80,7 @@ export class ReservationsService {
 
     if ((dto.checkInDate || dto.checkOutDate) && reservation.status !== ReservationStatus.CANCELLED) {
       await this.checkAvailability(
+        tenantId,
         reservation.roomId,
         dto.checkInDate ?? reservation.checkInDate,
         dto.checkOutDate ?? reservation.checkOutDate,
@@ -86,6 +88,10 @@ export class ReservationsService {
       );
     }
 
+    // Apply dto fields first
+    Object.assign(reservation, dto);
+
+    // Then set status timestamps (these override any dto values for these fields)
     if (dto.status === ReservationStatus.CANCELLED && !reservation.cancelledAt) {
       reservation.cancelledAt = new Date();
     }
@@ -96,7 +102,6 @@ export class ReservationsService {
       reservation.actualCheckOut = new Date();
     }
 
-    Object.assign(reservation, dto);
     return this.repo.save(reservation);
   }
 

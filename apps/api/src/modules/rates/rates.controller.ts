@@ -9,6 +9,8 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/services/auth.service';
 import { PricingService } from './pricing.service';
 import { RoomRate } from './entities/room-rate.entity';
+import { Room } from '../properties/entities/room.entity';
+import { RoomType } from '../properties/entities/room-type.entity';
 import { CreateRoomRateDto } from './dto/create-room-rate.dto';
 import { UpdateRoomRateDto } from './dto/update-room-rate.dto';
 
@@ -18,10 +20,24 @@ export class RatesController {
   constructor(
     private readonly pricingService: PricingService,
     @InjectRepository(RoomRate) private readonly repo: Repository<RoomRate>,
+    @InjectRepository(Room) private readonly roomsRepo: Repository<Room>,
+    @InjectRepository(RoomType) private readonly roomTypesRepo: Repository<RoomType>,
   ) {}
 
   @Post()
-  create(@CurrentUser() user: JwtPayload, @Body() dto: CreateRoomRateDto) {
+  async create(@CurrentUser() user: JwtPayload, @Body() dto: CreateRoomRateDto) {
+    if (dto.roomId) {
+      const room = await this.roomsRepo.findOne({
+        where: { id: dto.roomId, tenantId: user.tenantId, deletedAt: IsNull() },
+      });
+      if (!room) throw new NotFoundException('Room not found');
+    }
+    if (dto.roomTypeId) {
+      const roomType = await this.roomTypesRepo.findOne({
+        where: { id: dto.roomTypeId, tenantId: user.tenantId, deletedAt: IsNull() },
+      });
+      if (!roomType) throw new NotFoundException('Room type not found');
+    }
     const rate = this.repo.create({ ...dto, tenantId: user.tenantId });
     return this.repo.save(rate);
   }

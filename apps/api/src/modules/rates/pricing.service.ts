@@ -62,7 +62,19 @@ export class PricingService {
     });
     if (!roomType) throw new NotFoundException('Room type not found');
 
-    const rates = await this.findRatesForRoom(tenantId, roomId);
+    // Pass roomTypeId directly to avoid re-fetching room inside findRatesForRoom
+    const rates = await this.ratesRepo
+      .createQueryBuilder('r')
+      .where('r.tenant_id = :tenantId', { tenantId })
+      .andWhere('r.is_active = true')
+      .andWhere('r.deleted_at IS NULL')
+      .andWhere('(r.room_id = :roomId OR r.room_type_id = :roomTypeId)', {
+        roomId,
+        roomTypeId: room.roomTypeId,
+      })
+      .orderBy('r.priority', 'DESC')
+      .addOrderBy('CASE WHEN r.room_id IS NOT NULL THEN 0 ELSE 1 END', 'ASC')
+      .getMany();
     const nights = this.nightsBetween(checkIn, checkOut);
 
     if (nights <= 0) {
@@ -74,7 +86,7 @@ export class PricingService {
 
     for (let i = 0; i < nights; i++) {
       const date = this.addDays(checkIn, i);
-      const rate = this.findBestRate(rates, date);
+      const rate = this.findBestRate(rates, date, nights);
       const pricePerNight = rate ? Number(rate.pricePerNight) : Number(roomType.basePrice);
       breakdown.push({ date, pricePerNight, rateName: rate?.name ?? 'Precio base' });
       baseAmount += pricePerNight;
@@ -84,11 +96,12 @@ export class PricingService {
     return { nights, baseAmount: Math.round(baseAmount * 100) / 100, currency, breakdown };
   }
 
-  private findBestRate(rates: RoomRate[], date: string): RoomRate | null {
+  private findBestRate(rates: RoomRate[], date: string, totalNights: number): RoomRate | null {
     for (const rate of rates) {
       const afterStart = !rate.startDate || rate.startDate <= date;
       const beforeEnd = !rate.endDate || rate.endDate >= date;
-      if (afterStart && beforeEnd) return rate;
+      const meetsMinNights = !rate.minNights || totalNights >= rate.minNights;
+      if (afterStart && beforeEnd && meetsMinNights) return rate;
     }
     return null;
   }
