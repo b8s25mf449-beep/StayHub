@@ -115,3 +115,27 @@ export interface SyncResult {
   skipped: number;
   errors: Array<{ uid: string; reason: string }>;
 }
+
+export interface RoomRate {
+  id: string;
+  tenantId: string;
+  roomId: string | null;
+  roomTypeId: string | null;
+  name: string;
+  pricePerNight: number;
+  currency: string;
+  startDate: string | null;
+  endDate: string | null;
+  minNights: number | null;
+  priority: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StayPrice {
+  nights: number;
+  baseAmount: number;
+  currency: string;
+  breakdown: Array<{ date: string; pricePerNight: number; rateName: string }>;
+}
