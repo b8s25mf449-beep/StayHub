@@ -63,6 +63,8 @@ export default function RatesDrawer({ room, roomType, onClose }: Props) {
     try {
       await api.delete(`/api/v1/rates/${id}`);
       mutate(`/api/v1/rates?roomId=${room.id}`);
+    } catch {
+      setError('Error al eliminar la tarifa');
     } finally {
       setDeleting(null);
     }
