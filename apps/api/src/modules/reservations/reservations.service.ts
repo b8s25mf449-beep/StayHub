@@ -5,11 +5,13 @@ import { randomUUID } from 'crypto';
 import { Reservation, ReservationStatus } from './entities/reservation.entity';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
+import { PricingService } from '../rates/pricing.service';
 
 @Injectable()
 export class ReservationsService {
   constructor(
     @InjectRepository(Reservation) private readonly repo: Repository<Reservation>,
+    private readonly pricingService: PricingService,
   ) {}
 
   private generateConfirmationNumber(): string {
@@ -34,10 +36,27 @@ export class ReservationsService {
 
   async create(tenantId: string, dto: CreateReservationDto): Promise<Reservation> {
     await this.checkAvailability(dto.roomId, dto.checkInDate, dto.checkOutDate);
+
+    const stay = await this.pricingService.calculateStay(
+      tenantId, dto.roomId, dto.checkInDate, dto.checkOutDate,
+    );
+
+    const baseAmount = dto.baseAmount ?? stay.baseAmount;
+    const taxesAmount = dto.taxesAmount ?? 0;
+    const extrasAmount = dto.extrasAmount ?? 0;
+    const discountAmount = dto.discountAmount ?? 0;
+    const totalAmount = dto.totalAmount ?? (baseAmount + taxesAmount + extrasAmount - discountAmount);
+
     const reservation = this.repo.create({
       ...dto,
       tenantId,
       confirmationNumber: this.generateConfirmationNumber(),
+      baseAmount,
+      taxesAmount,
+      extrasAmount,
+      discountAmount,
+      totalAmount,
+      currency: dto.currency ?? stay.currency,
     });
     return this.repo.save(reservation);
   }

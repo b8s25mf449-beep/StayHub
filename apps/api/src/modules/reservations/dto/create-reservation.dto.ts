@@ -8,8 +8,8 @@ export class CreateReservationDto {
   @ApiProperty() @IsUUID() guestId: string;
   @ApiProperty({ example: '2026-07-01' }) @IsDateString() checkInDate: string;
   @ApiProperty({ example: '2026-07-05' }) @IsDateString() checkOutDate: string;
-  @ApiProperty() @IsNumber() @IsPositive() baseAmount: number;
-  @ApiProperty() @IsNumber() @IsPositive() totalAmount: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() @IsPositive() baseAmount?: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() @IsPositive() totalAmount?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0) taxesAmount?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0) extrasAmount?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0) discountAmount?: number;
