@@ -7,9 +7,17 @@ import { calcNights } from '@/lib/utils';
 import RoomSelectionManager, { type RoomLine } from './RoomSelectionManager';
 import type { Property, Room, RoomType, Guest } from '@/types';
 
+export interface PendingGuest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
 /** Only user-input data — no fetched reference data */
 export interface ReservationFormData {
   guest: Guest | null;
+  pendingGuest: PendingGuest | null;
   propertyId: string;
   rooms: RoomLine[];
   checkInDate: string;
@@ -49,7 +57,9 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
     fetcher,
   );
   const { data: guestResults = [] } = useSWR<Guest[]>(
-    guestSearch.length >= 2 ? `/api/v1/guests?search=${encodeURIComponent(guestSearch)}` : null,
+    !value.pendingGuest && guestSearch.length >= 2
+      ? `/api/v1/guests?search=${encodeURIComponent(guestSearch)}`
+      : null,
     fetcher,
   );
 
@@ -61,7 +71,6 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
   useEffect(() => {
     if (fetchedRooms.length === 0) return;
     setLocalRooms(fetchedRooms);
-    // Pre-fill first room using latest value via ref (no stale closure)
     if (valueRef.current.rooms[0]?.roomId === '') {
       onChangeRef.current({
         ...valueRef.current,
@@ -77,14 +86,7 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
   function handlePropertyChange(propertyId: string) {
     setLocalRooms([]);
     setLocalTypes([]);
-    const newValue = {
-      ...value,
-      propertyId,
-      rooms: [{ id: `line-${Date.now()}`, roomId: '', adults: 1, children: 0 }],
-    };
-    onChange(newValue);
-    // If SWR already has cached rooms for this property, pre-fill immediately
-    // (effect won't fire if fetchedRooms reference didn't change)
+    onChange({ ...value, propertyId, rooms: [{ id: `line-${Date.now()}`, roomId: '', adults: 1, children: 0 }] });
     if (fetchedRooms.length > 0) {
       setTimeout(() => {
         if (valueRef.current.rooms[0]?.roomId === '') {
@@ -105,9 +107,27 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
   }
 
   function selectGuest(g: Guest) {
-    onChange({ ...value, guest: g });
+    onChange({ ...value, guest: g, pendingGuest: null });
     setGuestSearch(`${g.firstName} ${g.lastName}`);
     setShowGuestResults(false);
+  }
+
+  function startNewGuest() {
+    const parts = guestSearch.trim().split(/\s+/);
+    const firstName = parts[0] ?? '';
+    const lastName = parts.slice(1).join(' ');
+    onChange({ ...value, guest: null, pendingGuest: { firstName, lastName, email: '', phone: '' } });
+    setShowGuestResults(false);
+  }
+
+  function cancelNewGuest() {
+    onChange({ ...value, pendingGuest: null });
+    setGuestSearch('');
+  }
+
+  function setPendingField(field: keyof PendingGuest, val: string) {
+    if (!value.pendingGuest) return;
+    set('pendingGuest', { ...value.pendingGuest, [field]: val });
   }
 
   const nights = value.checkInDate && value.checkOutDate
@@ -115,39 +135,136 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
     : 0;
 
   const hasValidRooms = value.rooms.length > 0 && value.rooms.every((r) => r.roomId);
-  const canSubmit = !submitting && !!value.guest && hasValidRooms && nights > 0;
+  const pendingGuestValid = !!value.pendingGuest?.firstName.trim() && !!value.pendingGuest?.lastName.trim();
+  const hasGuest = !!value.guest || pendingGuestValid;
+  const canSubmit = !submitting && hasGuest && hasValidRooms && nights > 0;
+
+  const showCreateOption = showGuestResults && guestSearch.length >= 2;
 
   return (
     <div className="space-y-5">
-      {/* Guest search */}
+      {/* Guest section */}
       <div className="relative">
         <label className="text-xs text-muted uppercase tracking-wider block mb-2">Huésped</label>
-        <input
-          value={guestSearch}
-          onChange={(e) => { setGuestSearch(e.target.value); setShowGuestResults(true); }}
-          onFocus={() => setShowGuestResults(true)}
-          onBlur={() => setTimeout(() => setShowGuestResults(false), 150)}
-          placeholder="Buscar por nombre..."
-          className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder-muted"
-        />
-        {showGuestResults && guestResults.length > 0 && (
-          <div className="absolute z-10 top-full left-0 right-0 bg-surface border border-border rounded-lg mt-1 max-h-40 overflow-y-auto shadow-xl animate-fade-up">
-            {guestResults.map((g) => (
+
+        {value.pendingGuest ? (
+          /* ── Inline new-guest form ── */
+          <div className="bg-bg border border-border rounded-lg p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-primary">+ Nuevo huésped</span>
               <button
-                key={g.id}
-                onMouseDown={() => selectGuest(g)}
-                className="press w-full text-left px-3 py-2 text-sm text-white hover:bg-card"
+                type="button"
+                onClick={cancelNewGuest}
+                className="text-xs text-muted hover:text-white transition-colors"
               >
-                {g.firstName} {g.lastName}
-                {g.email && <span className="text-muted text-xs ml-2">{g.email}</span>}
+                Cancelar
               </button>
-            ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] text-muted uppercase tracking-wider block mb-1">
+                  Nombre <span className="text-[#f87171]">*</span>
+                </label>
+                <input
+                  value={value.pendingGuest.firstName}
+                  onChange={(e) => setPendingField('firstName', e.target.value)}
+                  placeholder="Nombre"
+                  autoFocus
+                  className="input-field w-full bg-surface border border-border rounded-md px-2.5 py-2 text-sm text-white placeholder-muted"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted uppercase tracking-wider block mb-1">
+                  Apellido <span className="text-[#f87171]">*</span>
+                </label>
+                <input
+                  value={value.pendingGuest.lastName}
+                  onChange={(e) => setPendingField('lastName', e.target.value)}
+                  placeholder="Apellido"
+                  className="input-field w-full bg-surface border border-border rounded-md px-2.5 py-2 text-sm text-white placeholder-muted"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] text-muted uppercase tracking-wider block mb-1">Email</label>
+                <input
+                  type="email"
+                  value={value.pendingGuest.email}
+                  onChange={(e) => setPendingField('email', e.target.value)}
+                  placeholder="correo@ejemplo.com"
+                  className="input-field w-full bg-surface border border-border rounded-md px-2.5 py-2 text-sm text-white placeholder-muted"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted uppercase tracking-wider block mb-1">Teléfono</label>
+                <input
+                  type="tel"
+                  value={value.pendingGuest.phone}
+                  onChange={(e) => setPendingField('phone', e.target.value)}
+                  placeholder="+54 9 11 ..."
+                  className="input-field w-full bg-surface border border-border rounded-md px-2.5 py-2 text-sm text-white placeholder-muted"
+                />
+              </div>
+            </div>
+
+            {pendingGuestValid && (
+              <p className="text-xs text-primary">
+                ✓ {value.pendingGuest.firstName} {value.pendingGuest.lastName} — se creará al confirmar
+              </p>
+            )}
           </div>
-        )}
-        {value.guest && (
-          <p className="text-xs text-primary mt-1">
-            ✓ {value.guest.firstName} {value.guest.lastName}
-          </p>
+        ) : (
+          /* ── Search existing guests ── */
+          <>
+            <input
+              value={guestSearch}
+              onChange={(e) => { setGuestSearch(e.target.value); setShowGuestResults(true); }}
+              onFocus={() => setShowGuestResults(true)}
+              onBlur={() => setTimeout(() => setShowGuestResults(false), 150)}
+              placeholder="Buscar por nombre..."
+              className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder-muted"
+            />
+
+            {showCreateOption && (
+              <div className="absolute z-10 top-full left-0 right-0 bg-surface border border-border rounded-lg mt-1 shadow-xl animate-fade-up overflow-hidden">
+                {guestResults.length > 0 && (
+                  <>
+                    <div className="max-h-36 overflow-y-auto">
+                      {guestResults.map((g) => (
+                        <button
+                          key={g.id}
+                          onMouseDown={() => selectGuest(g)}
+                          className="press w-full text-left px-3 py-2 text-sm text-white hover:bg-card flex items-center justify-between"
+                        >
+                          <span>{g.firstName} {g.lastName}</span>
+                          {g.email && <span className="text-muted text-xs">{g.email}</span>}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="border-t border-border" />
+                  </>
+                )}
+                <button
+                  onMouseDown={startNewGuest}
+                  className="press w-full text-left px-3 py-2 text-sm text-primary hover:bg-card flex items-center gap-2"
+                >
+                  <span className="font-medium">+</span>
+                  <span>
+                    Crear &ldquo;{guestSearch.trim()}&rdquo;
+                  </span>
+                </button>
+              </div>
+            )}
+
+            {value.guest && (
+              <p className="text-xs text-primary mt-1">
+                ✓ {value.guest.firstName} {value.guest.lastName}
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -197,7 +314,6 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
       {/* Room selection */}
       <div>
         <label className="text-xs text-muted uppercase tracking-wider block mb-3">Habitaciones</label>
-
         {!value.propertyId && (
           <p className="text-xs text-muted py-2">Seleccioná una propiedad primero</p>
         )}
@@ -220,14 +336,21 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
         <label className="text-sm text-[#ccc]">¿Requiere factura?</label>
         <button
           type="button"
+          role="switch"
+          aria-checked={value.requiresInvoice}
           onClick={() => set('requiresInvoice', !value.requiresInvoice)}
-          className={`relative w-10 h-5 rounded-full ${value.requiresInvoice ? 'bg-primary' : 'bg-border'}`}
-          style={{ transition: 'background-color 150ms cubic-bezier(0.23, 1, 0.32, 1)' }}
+          className="relative w-10 h-5 rounded-full"
+          style={{
+            backgroundColor: value.requiresInvoice ? '#0f766e' : '#1a2535',
+            transition: 'background-color 200ms cubic-bezier(0.23, 1, 0.32, 1)',
+          }}
         >
           <span
-            className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-              value.requiresInvoice ? 'translate-x-5' : 'translate-x-0.5'
-            }`}
+            className="absolute top-0.5 left-0 w-4 h-4 bg-white rounded-full shadow"
+            style={{
+              transform: value.requiresInvoice ? 'translateX(21px)' : 'translateX(2px)',
+              transition: 'transform 200ms cubic-bezier(0.23, 1, 0.32, 1)',
+            }}
           />
         </button>
       </div>
@@ -246,10 +369,17 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
         />
       </div>
 
-      {/* Debug hint */}
-      {!canSubmit && value.guest && value.propertyId && nights > 0 && (
+      {!canSubmit && (value.propertyId || value.checkInDate || value.rooms[0]?.roomId) && (
         <p className="text-xs text-[#fb923c]">
-          {!hasValidRooms ? 'Seleccioná una habitación para continuar.' : ''}
+          {!value.guest && !value.pendingGuest
+            ? 'Buscá y seleccioná un huésped, o creá uno nuevo.'
+            : value.pendingGuest && !pendingGuestValid
+            ? 'Completá nombre y apellido del nuevo huésped.'
+            : !hasValidRooms
+            ? 'Seleccioná una habitación para continuar.'
+            : nights === 0
+            ? 'Las fechas de check-in y check-out no son válidas.'
+            : ''}
         </p>
       )}
 
@@ -259,7 +389,7 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
         className="press w-full bg-primary text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-40"
       >
         {submitting
-          ? `Guardando...`
+          ? 'Guardando...'
           : `Confirmar ${value.rooms.length > 1 ? `${value.rooms.length} habitaciones` : 'reserva'}`}
       </button>
     </div>

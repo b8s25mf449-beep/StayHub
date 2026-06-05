@@ -15,6 +15,7 @@ const TAX_RATE = 0.21;
 
 const EMPTY: ReservationFormData = {
   guest: null,
+  pendingGuest: null,
   propertyId: '',
   rooms: [{ id: `line-${Date.now()}`, roomId: '', adults: 1, children: 0 }],
   checkInDate: '',
@@ -36,7 +37,8 @@ export default function NewReservationPage() {
   );
 
   async function handleSubmit() {
-    if (!formData.guest || !formData.checkInDate || !formData.checkOutDate) return;
+    const hasGuest = formData.guest || (formData.pendingGuest?.firstName.trim() && formData.pendingGuest?.lastName.trim());
+    if (!hasGuest || !formData.checkInDate || !formData.checkOutDate) return;
     const validRooms = formData.rooms.filter((r) => r.roomId);
     if (validRooms.length === 0) return;
 
@@ -44,8 +46,22 @@ export default function NewReservationPage() {
     setError('');
 
     try {
+      // If new guest, create them first
+      let guestId: string;
+      if (formData.guest) {
+        guestId = formData.guest.id;
+      } else {
+        const pg = formData.pendingGuest!;
+        const { data: created } = await api.post('/api/v1/guests', {
+          firstName: pg.firstName.trim(),
+          lastName: pg.lastName.trim(),
+          ...(pg.email.trim() ? { email: pg.email.trim() } : {}),
+          ...(pg.phone.trim() ? { phone: pg.phone.trim() } : {}),
+        });
+        guestId = created.id;
+      }
+
       for (const line of validRooms) {
-        // Fetch pricing from engine for this specific room + dates
         let baseAmount = 0;
         try {
           const priceRes = await api.get<{ baseAmount: number; currency: string }>(
@@ -53,7 +69,7 @@ export default function NewReservationPage() {
           );
           baseAmount = priceRes.data.baseAmount;
         } catch {
-          // If pricing engine fails, send without baseAmount (server calculates)
+          // pricing engine failure — server will calculate
         }
 
         const taxesAmount = formData.requiresInvoice ? baseAmount * TAX_RATE : 0;
@@ -61,7 +77,7 @@ export default function NewReservationPage() {
         await api.post('/api/v1/reservations', {
           propertyId: formData.propertyId,
           roomId: line.roomId,
-          guestId: formData.guest!.id,
+          guestId,
           checkInDate: formData.checkInDate,
           checkOutDate: formData.checkOutDate,
           adultsCount: line.adults,
