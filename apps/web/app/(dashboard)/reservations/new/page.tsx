@@ -6,7 +6,7 @@ import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { calcNights } from '@/lib/utils';
+// calcNights not needed at page level — pricing engine handles it server-side
 import ReservationForm, { type ReservationFormData } from '@/components/reservations/ReservationForm';
 import QuotationPanel from '@/components/reservations/QuotationPanel';
 import type { Tenant } from '@/types';
@@ -17,8 +17,6 @@ const EMPTY: ReservationFormData = {
   guest: null,
   propertyId: '',
   rooms: [{ id: `line-${Date.now()}`, roomId: '', adults: 1, children: 0 }],
-  availableRooms: [],
-  roomTypes: [],
   checkInDate: '',
   checkOutDate: '',
   requiresInvoice: false,
@@ -45,14 +43,19 @@ export default function NewReservationPage() {
     setSubmitting(true);
     setError('');
 
-    const nights = calcNights(formData.checkInDate, formData.checkOutDate);
-
     try {
-      // Create one reservation per selected physical room
       for (const line of validRooms) {
-        const physical = formData.availableRooms.find((r) => r.id === line.roomId);
-        const rt = formData.roomTypes.find((t) => t.id === physical?.roomTypeId);
-        const baseAmount = Number(rt?.basePrice ?? 0) * nights;
+        // Fetch pricing from engine for this specific room + dates
+        let baseAmount = 0;
+        try {
+          const priceRes = await api.get<{ baseAmount: number; currency: string }>(
+            `/api/v1/rates/room/${line.roomId}/calculate?checkIn=${formData.checkInDate}&checkOut=${formData.checkOutDate}`,
+          );
+          baseAmount = priceRes.data.baseAmount;
+        } catch {
+          // If pricing engine fails, send without baseAmount (server calculates)
+        }
+
         const taxesAmount = formData.requiresInvoice ? baseAmount * TAX_RATE : 0;
 
         await api.post('/api/v1/reservations', {
@@ -63,6 +66,7 @@ export default function NewReservationPage() {
           checkOutDate: formData.checkOutDate,
           adultsCount: line.adults,
           childrenCount: line.children,
+          ...(baseAmount > 0 ? { baseAmount, totalAmount: baseAmount + taxesAmount } : {}),
           taxesAmount,
           notes: formData.notes || undefined,
           source: 'direct',
@@ -81,10 +85,7 @@ export default function NewReservationPage() {
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-6 animate-fade-up delay-0">
-        <button
-          onClick={() => router.back()}
-          className="press text-muted text-sm"
-        >
+        <button onClick={() => router.back()} className="press text-muted text-sm">
           ← Volver
         </button>
         <h2 className="text-lg font-semibold">Nueva reserva</h2>
@@ -110,7 +111,7 @@ export default function NewReservationPage() {
             data={formData}
             tenantName={tenant?.name ?? 'Hotel'}
             tenantPhone={tenant?.phone ?? ''}
-            tenantAddress={''}
+            tenantAddress=""
           />
         </div>
       </div>

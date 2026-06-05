@@ -1,21 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import { calcNights } from '@/lib/utils';
 import RoomSelectionManager, { type RoomLine } from './RoomSelectionManager';
 import type { Property, Room, RoomType, Guest } from '@/types';
 
+/** Only user-input data — no fetched reference data */
 export interface ReservationFormData {
   guest: Guest | null;
   propertyId: string;
-  /** Selected room lines — each references a real physical room */
   rooms: RoomLine[];
-  /** Physical rooms available for the property (fetched from DB) */
-  availableRooms: Room[];
-  /** Room types for name + price lookup */
-  roomTypes: RoomType[];
   checkInDate: string;
   checkOutDate: string;
   requiresInvoice: boolean;
@@ -33,19 +29,57 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
   const [guestSearch, setGuestSearch] = useState('');
   const [showGuestResults, setShowGuestResults] = useState(false);
 
+  /* ── Reference data (local only, not in parent state) ── */
+  const [localRooms, setLocalRooms] = useState<Room[]>([]);
+  const [localTypes, setLocalTypes] = useState<RoomType[]>([]);
+
   const { data: properties = [] } = useSWR<Property[]>('/api/v1/properties', fetcher);
-  const { data: roomTypes = [] } = useSWR<RoomType[]>(
-    value.propertyId ? `/api/v1/room-types?propertyId=${value.propertyId}` : '/api/v1/room-types',
-    fetcher,
-  );
   const { data: fetchedRooms = [] } = useSWR<Room[]>(
     value.propertyId ? `/api/v1/rooms?propertyId=${value.propertyId}` : null,
+    fetcher,
+  );
+  const { data: fetchedTypes = [] } = useSWR<RoomType[]>(
+    value.propertyId ? `/api/v1/room-types?propertyId=${value.propertyId}` : '/api/v1/room-types',
     fetcher,
   );
   const { data: guestResults = [] } = useSWR<Guest[]>(
     guestSearch.length >= 2 ? `/api/v1/guests?search=${encodeURIComponent(guestSearch)}` : null,
     fetcher,
   );
+
+  /* ── Sync fetched rooms into local state (never in render phase) ── */
+  useEffect(() => {
+    if (fetchedRooms.length > 0) setLocalRooms(fetchedRooms);
+  }, [fetchedRooms]);
+
+  useEffect(() => {
+    if (fetchedTypes.length > 0) setLocalTypes(fetchedTypes);
+  }, [fetchedTypes]);
+
+  /* ── Pre-fill first room when rooms arrive ── */
+  useEffect(() => {
+    if (fetchedRooms.length > 0 && value.rooms[0]?.roomId === '') {
+      onChange({
+        ...value,
+        rooms: [
+          { ...value.rooms[0], roomId: fetchedRooms[0].id },
+          ...value.rooms.slice(1),
+        ],
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchedRooms]);
+
+  /* ── Reset local data when property changes ── */
+  function handlePropertyChange(propertyId: string) {
+    setLocalRooms([]);
+    setLocalTypes([]);
+    onChange({
+      ...value,
+      propertyId,
+      rooms: [{ id: `line-${Date.now()}`, roomId: '', adults: 1, children: 0 }],
+    });
+  }
 
   function set<K extends keyof ReservationFormData>(key: K, val: ReservationFormData[K]) {
     onChange({ ...value, [key]: val });
@@ -55,32 +89,6 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
     onChange({ ...value, guest: g });
     setGuestSearch(`${g.firstName} ${g.lastName}`);
     setShowGuestResults(false);
-  }
-
-  function handlePropertyChange(propertyId: string) {
-    onChange({
-      ...value,
-      propertyId,
-      rooms: [{ id: `line-${Date.now()}`, roomId: '', adults: 1, children: 0 }],
-      availableRooms: [],
-      roomTypes: [],
-    });
-  }
-
-  // Sync fetched rooms + types into form state when they arrive
-  const roomsChanged = fetchedRooms.length > 0 && value.availableRooms !== fetchedRooms;
-  const typesChanged = roomTypes.length > 0 && value.roomTypes !== roomTypes;
-  if (roomsChanged || typesChanged) {
-    const patched = {
-      ...value,
-      availableRooms: fetchedRooms.length > 0 ? fetchedRooms : value.availableRooms,
-      roomTypes: roomTypes.length > 0 ? roomTypes : value.roomTypes,
-    };
-    // Pre-fill first room's roomId if blank
-    if (patched.rooms[0]?.roomId === '' && fetchedRooms[0]) {
-      patched.rooms = [{ ...patched.rooms[0], roomId: fetchedRooms[0].id }, ...patched.rooms.slice(1)];
-    }
-    onChange(patched);
   }
 
   const nights = value.checkInDate && value.checkOutDate
@@ -169,20 +177,19 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
 
       {/* Room selection */}
       <div>
-        <label className="text-xs text-muted uppercase tracking-wider block mb-3">
-          Habitaciones
-        </label>
-        {value.roomTypes.length === 0 && value.propertyId && (
-          <p className="text-xs text-muted py-2">Cargando tipos de habitación...</p>
-        )}
+        <label className="text-xs text-muted uppercase tracking-wider block mb-3">Habitaciones</label>
+
         {!value.propertyId && (
           <p className="text-xs text-muted py-2">Seleccioná una propiedad primero</p>
         )}
-        {value.propertyId && value.availableRooms.length > 0 && (
+        {value.propertyId && localRooms.length === 0 && (
+          <p className="text-xs text-muted py-2">Cargando habitaciones...</p>
+        )}
+        {value.propertyId && localRooms.length > 0 && (
           <RoomSelectionManager
             rooms={value.rooms}
-            availableRooms={value.availableRooms}
-            roomTypes={value.roomTypes}
+            availableRooms={localRooms}
+            roomTypes={localTypes}
             nights={nights}
             onChange={(rooms) => set('rooms', rooms)}
           />
@@ -195,10 +202,8 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
         <button
           type="button"
           onClick={() => set('requiresInvoice', !value.requiresInvoice)}
-          className={`relative w-10 h-5 rounded-full transition-colors ${
-            value.requiresInvoice ? 'bg-primary' : 'bg-border'
-          }`}
-          style={{ transition: 'background-color 150ms' }}
+          className={`relative w-10 h-5 rounded-full ${value.requiresInvoice ? 'bg-primary' : 'bg-border'}`}
+          style={{ transition: 'background-color 150ms cubic-bezier(0.23, 1, 0.32, 1)' }}
         >
           <span
             className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
@@ -211,7 +216,7 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
       {/* Notes */}
       <div>
         <label className="text-xs text-muted uppercase tracking-wider block mb-2">
-          Notas (opcional)
+          Notas <span className="normal-case text-[10px] text-muted">(opcional)</span>
         </label>
         <textarea
           value={value.notes}
@@ -222,13 +227,20 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
         />
       </div>
 
+      {/* Debug hint */}
+      {!canSubmit && value.guest && value.propertyId && nights > 0 && (
+        <p className="text-xs text-[#fb923c]">
+          {!hasValidRooms ? 'Seleccioná una habitación para continuar.' : ''}
+        </p>
+      )}
+
       <button
         onClick={onSubmit}
         disabled={!canSubmit}
         className="press w-full bg-primary text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-40"
       >
         {submitting
-          ? `Guardando ${value.rooms.length > 1 ? `${value.rooms.length} reservas` : 'reserva'}...`
+          ? `Guardando...`
           : `Confirmar ${value.rooms.length > 1 ? `${value.rooms.length} habitaciones` : 'reserva'}`}
       </button>
     </div>
