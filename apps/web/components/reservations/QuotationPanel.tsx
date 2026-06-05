@@ -96,7 +96,8 @@ export default function QuotationPanel({ data, tenantName, tenantPhone, tenantAd
   const hasData = validRooms.length > 0 && nights > 0;
 
   /* We can't call hooks conditionally so we always render the room lines component */
-  const canDownload = !!data.guest && hasData;
+  const pendingGuestValid = !!data.pendingGuest?.firstName.trim() && !!data.pendingGuest?.lastName.trim();
+  const canDownload = (!!data.guest || pendingGuestValid) && hasData;
 
   async function buildPdf(rooms: QuotationRoom[], filename: string) {
     const { pdf } = await import('@react-pdf/renderer');
@@ -106,7 +107,11 @@ export default function QuotationPanel({ data, tenantName, tenantPhone, tenantAd
     const roomIva = data.requiresInvoice ? subtotal * TAX_RATE : 0;
     const blob = await pdf(React.createElement(QuotationDocument, {
       tenantName, tenantPhone, tenantAddress,
-      guestName: data.guest ? `${data.guest.firstName} ${data.guest.lastName}` : '',
+      guestName: data.guest
+        ? `${data.guest.firstName} ${data.guest.lastName}`
+        : data.pendingGuest
+        ? `${data.pendingGuest.firstName} ${data.pendingGuest.lastName}`
+        : '',
       checkInDate: data.checkInDate,
       checkOutDate: data.checkOutDate,
       nights,
@@ -247,7 +252,8 @@ function PriceSummary({
           subtotal: prices[i]?.data?.baseAmount ?? 0,
         };
       });
-      const slug = `${data.guest!.firstName}-${data.guest!.lastName}`.toLowerCase();
+      const g = data.guest ?? data.pendingGuest;
+      const slug = g ? `${g.firstName}-${g.lastName}`.toLowerCase() : 'cotizacion';
       await buildPdf(rooms, `cotizacion-${slug}.pdf`);
     } finally {
       setDownloading(false);
