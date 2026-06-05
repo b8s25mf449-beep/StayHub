@@ -1,7 +1,10 @@
 'use client';
 
+import { useState } from 'react';
+import { FileDown, Loader2 } from 'lucide-react';
 import { formatPrice, calcNights } from '@/lib/utils';
 import type { ReservationFormData } from './ReservationForm';
+import type { QuotationRoom } from '@/components/pdf/QuotationDocument';
 
 interface Props {
   data: ReservationFormData;
@@ -13,75 +16,127 @@ interface Props {
 const TAX_RATE = 0.21;
 
 export default function QuotationPanel({ data, tenantName, tenantPhone, tenantAddress }: Props) {
+  const [downloading, setDownloading] = useState(false);
+
   const nights = data.checkInDate && data.checkOutDate
     ? calcNights(data.checkInDate, data.checkOutDate)
     : 0;
 
-  const pricePerNight = Number(data.roomType?.basePrice ?? 0);
-  const subtotal = pricePerNight * nights;
-  const iva = data.requiresInvoice ? subtotal * TAX_RATE : 0;
-  const totalWithTax = subtotal + iva;
+  const roomLines: QuotationRoom[] = data.rooms
+    .map((r) => {
+      const rt = data.roomTypes.find((t) => t.id === r.roomTypeId);
+      if (!rt) return null;
+      const pricePerNight = Number(rt.basePrice);
+      return {
+        roomName: rt.name,
+        adults: r.adults,
+        children: r.children,
+        pricePerNight,
+        subtotal: pricePerNight * nights,
+      } satisfies QuotationRoom;
+    })
+    .filter((r): r is QuotationRoom => r !== null);
 
-  const hasRoom = !!data.room && !!data.roomType && nights > 0;
+  const grandSubtotal = roomLines.reduce((s, r) => s + r.subtotal, 0);
+  const iva = data.requiresInvoice ? grandSubtotal * TAX_RATE : 0;
+  const totalWithTax = grandSubtotal + iva;
 
-  async function handleDownloadPdf() {
-    if (!hasRoom || !data.guest) return;
+  const canDownload = !!data.guest && roomLines.length > 0 && nights > 0;
+
+  async function buildAndDownloadPdf(rooms: QuotationRoom[], filename: string) {
     const { pdf } = await import('@react-pdf/renderer');
     const { QuotationDocument } = await import('@/components/pdf/QuotationDocument');
     const React = (await import('react')).default;
+
+    const subtotal = rooms.reduce((s, r) => s + r.subtotal, 0);
+    const roomIva = data.requiresInvoice ? subtotal * TAX_RATE : 0;
+
     const element = React.createElement(QuotationDocument, {
       tenantName,
       tenantPhone,
       tenantAddress,
-      guestName: `${data.guest.firstName} ${data.guest.lastName}`,
-      adultsCount: data.adultsCount,
+      guestName: data.guest ? `${data.guest.firstName} ${data.guest.lastName}` : '',
       checkInDate: data.checkInDate,
       checkOutDate: data.checkOutDate,
       nights,
-      roomName: data.roomType?.name ?? '',
-      roomNumber: data.room?.roomNumber ?? '',
-      pricePerNight,
-      subtotal,
+      rooms,
+      grandSubtotal: subtotal,
       requiresInvoice: data.requiresInvoice,
-      iva,
-      totalWithTax,
+      iva: roomIva,
+      totalWithTax: subtotal + roomIva,
     });
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const blob = await pdf(element as any).toBlob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cotizacion-${data.guest.firstName}-${data.guest.lastName}.pdf`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  async function handleDownloadAll() {
+    if (!canDownload) return;
+    setDownloading(true);
+    try {
+      const guestSlug = `${data.guest!.firstName}-${data.guest!.lastName}`.toLowerCase();
+      await buildAndDownloadPdf(roomLines, `cotizacion-${guestSlug}.pdf`);
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  async function handleDownloadPerRoom() {
+    if (!canDownload) return;
+    setDownloading(true);
+    try {
+      const guestSlug = `${data.guest!.firstName}-${data.guest!.lastName}`.toLowerCase();
+      for (let i = 0; i < roomLines.length; i++) {
+        await buildAndDownloadPdf(
+          [roomLines[i]],
+          `cotizacion-${guestSlug}-hab${i + 1}.pdf`,
+        );
+      }
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  const hasData = roomLines.length > 0 && nights > 0;
 
   return (
     <div className="bg-card border border-border rounded-xl p-5 sticky top-6">
       <h3 className="text-xs text-muted uppercase tracking-wider mb-4">Cotización</h3>
 
-      {!hasRoom ? (
+      {!hasData ? (
         <p className="text-muted text-sm text-center py-8">
-          Seleccioná habitación y fechas para ver la cotización
+          Seleccioná tipo de habitación y fechas para ver la cotización
         </p>
       ) : (
         <div className="space-y-1">
-          <div className="flex justify-between items-baseline mb-4">
-            <span className="text-white text-sm font-medium">
-              {data.roomType?.name} (Hab. {data.room?.roomNumber})
-            </span>
-            <span className="text-muted text-xs">{nights} noche{nights !== 1 ? 's' : ''}</span>
+          {/* Room lines */}
+          <div className="space-y-2 mb-4">
+            {roomLines.map((r, i) => (
+              <div key={i} className="flex items-baseline justify-between animate-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
+                <div>
+                  <span className="text-white text-sm font-medium">{r.roomName}</span>
+                  <span className="text-muted text-xs ml-2">
+                    {r.adults}A{r.children > 0 ? `+${r.children}N` : ''}
+                  </span>
+                </div>
+                <span className="text-white font-mono text-sm">{formatPrice(r.subtotal)}</span>
+              </div>
+            ))}
           </div>
 
           <div className="border-t border-border pt-3 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted">
-                {formatPrice(pricePerNight)}/noche × {nights}
-              </span>
-              <span className="text-white font-mono">{formatPrice(subtotal)}</span>
+            <div className="flex justify-between text-xs text-muted">
+              <span>{nights} noche{nights !== 1 ? 's' : ''} · {roomLines.length} hab.</span>
+              <span>{formatPrice(grandSubtotal)}</span>
             </div>
 
-            <div className="pt-2 space-y-1">
+            <div className="pt-1 space-y-1">
               <p className="text-xs text-primary">✓ Desayuno incluido</p>
               <p className="text-xs text-primary">✓ Estacionamiento gratuito</p>
             </div>
@@ -89,8 +144,10 @@ export default function QuotationPanel({ data, tenantName, tenantPhone, tenantAd
 
           <div className="border-t border-border pt-3 mt-3">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-muted uppercase tracking-wider">Total (sin impuestos)</span>
-              <span className="text-white font-mono font-bold text-lg">{formatPrice(subtotal)}</span>
+              <span className="text-xs text-muted uppercase tracking-wider">Total</span>
+              <span className="text-white font-mono font-bold text-lg">
+                {formatPrice(grandSubtotal)}
+              </span>
             </div>
           </div>
 
@@ -107,13 +164,32 @@ export default function QuotationPanel({ data, tenantName, tenantPhone, tenantAd
             </div>
           )}
 
-          <button
-            onClick={handleDownloadPdf}
-            disabled={!data.guest}
-            className="w-full mt-4 bg-surface border border-border hover:border-primary text-[#ccc] hover:text-white py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-40"
-          >
-            Descargar cotización PDF
-          </button>
+          {/* Download buttons */}
+          <div className="pt-4 space-y-2">
+            <button
+              onClick={handleDownloadAll}
+              disabled={!canDownload || downloading}
+              className="press w-full flex items-center justify-center gap-2 bg-surface border border-border text-[#ccc] py-2.5 rounded-lg text-sm font-medium disabled:opacity-40"
+            >
+              {downloading ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <FileDown size={14} />
+              )}
+              {roomLines.length === 1 ? 'Descargar cotización PDF' : 'Descargar cotización completa'}
+            </button>
+
+            {roomLines.length > 1 && (
+              <button
+                onClick={handleDownloadPerRoom}
+                disabled={!canDownload || downloading}
+                className="press w-full flex items-center justify-center gap-2 bg-surface border border-border text-muted py-2 rounded-lg text-xs disabled:opacity-40"
+              >
+                <FileDown size={12} />
+                Descargar PDF por habitación ({roomLines.length} archivos)
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

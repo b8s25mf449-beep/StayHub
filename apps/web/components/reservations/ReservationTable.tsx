@@ -46,12 +46,12 @@ export default function ReservationTable() {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
+      <div className="flex items-center gap-2 mb-4 flex-wrap animate-fade-up delay-0">
         {FILTERS.map((f) => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
+            className={`press px-3 py-1.5 rounded-md text-xs font-medium border ${
               filter === f.key
                 ? 'bg-[#0f766e22] text-primary border-[#0f766e44]'
                 : 'bg-surface text-muted border-border hover:text-[#ccc]'
@@ -64,7 +64,7 @@ export default function ReservationTable() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar huésped o #..."
-          className="ml-auto bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-[#ccc] placeholder-muted outline-none focus:border-primary w-48"
+          className="input-field ml-auto bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-[#ccc] placeholder-muted w-48"
         />
       </div>
 
@@ -87,11 +87,20 @@ export default function ReservationTable() {
                 </td>
               </tr>
             )}
-            {filtered.map((r) => {
+            {filtered.map((r, i) => {
               const g = guestMap[r.guestId];
               const room = roomMap[r.roomId];
               return (
-                <tr key={r.id} className="border-t border-border hover:bg-[#0f1520] transition-colors">
+                <tr
+                  key={r.id}
+                  className="border-t border-border animate-fade-up"
+                  style={{
+                    animationDelay: `${50 + i * 30}ms`,
+                    transition: 'background-color 150ms cubic-bezier(0.23, 1, 0.32, 1)',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#0f1520')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
+                >
                   <td className="px-4 py-3 font-mono text-xs text-muted">{r.confirmationNumber}</td>
                   <td className="px-4 py-3 text-white text-sm">
                     {g ? `${g.firstName} ${g.lastName}` : '—'}

@@ -72,8 +72,16 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
+    alignItems: 'flex-start',
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  tableRowLast: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
   },
   roomNameText: {
     fontSize: 11,
@@ -98,6 +106,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginTop: 4,
   },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  totalLabel: {
+    fontSize: 9,
+    color: '#888888',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  totalValue: {
+    fontSize: 16,
+    fontFamily: 'Helvetica-Bold',
+    color: '#e8a94a',
+  },
   footer: {
     position: 'absolute',
     bottom: 32,
@@ -121,19 +146,24 @@ const styles = StyleSheet.create({
   },
 });
 
-interface QuotationData {
+export interface QuotationRoom {
+  roomName: string;
+  adults: number;
+  children: number;
+  pricePerNight: number;
+  subtotal: number;
+}
+
+export interface QuotationData {
   tenantName: string;
   tenantPhone: string;
   tenantAddress: string;
   guestName: string;
-  adultsCount: number;
   checkInDate: string;
   checkOutDate: string;
   nights: number;
-  roomName: string;
-  roomNumber: string;
-  pricePerNight: number;
-  subtotal: number;
+  rooms: QuotationRoom[];
+  grandSubtotal: number;
   requiresInvoice: boolean;
   iva: number;
   totalWithTax: number;
@@ -154,6 +184,9 @@ function fmtDateRange(checkIn: string, checkOut: string): string {
 }
 
 export function QuotationDocument(props: QuotationData) {
+  const totalAdults = props.rooms.reduce((s, r) => s + r.adults, 0);
+  const totalChildren = props.rooms.reduce((s, r) => s + r.children, 0);
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -176,19 +209,28 @@ export function QuotationDocument(props: QuotationData) {
             </Text>
             <Text style={styles.infoRow}>
               <Text style={styles.infoLabel}>Huésped:  </Text>
-              {props.guestName} · {props.adultsCount} adulto{props.adultsCount !== 1 ? 's' : ''}
+              {props.guestName}
+            </Text>
+            <Text style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Huéspedes:  </Text>
+              {totalAdults} adulto{totalAdults !== 1 ? 's' : ''}
+              {totalChildren > 0 ? `, ${totalChildren} niño${totalChildren !== 1 ? 's' : ''}` : ''}
             </Text>
           </View>
           <View style={styles.infoRight}>
             <Text style={styles.infoRow}>Desayuno incluido</Text>
+            <Text style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Habitaciones:  </Text>
+              {props.rooms.length}
+            </Text>
             {props.requiresInvoice && (
               <>
                 <Text style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Impuestos (21%):  </Text>
+                  <Text style={styles.infoLabel}>IVA (21%):  </Text>
                   {fmt(props.iva)}
                 </Text>
                 <Text style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Total con impuestos:  </Text>
+                  <Text style={styles.infoLabel}>Total c/factura:  </Text>
                   {fmt(props.totalWithTax)}
                 </Text>
               </>
@@ -198,7 +240,9 @@ export function QuotationDocument(props: QuotationData) {
 
         {/* DIVIDER + RESERVA */}
         <View style={styles.divider} />
-        <Text style={styles.sectionTitle}>Reserva</Text>
+        <Text style={styles.sectionTitle}>
+          {props.rooms.length === 1 ? 'Reserva' : `Reserva · ${props.rooms.length} habitaciones`}
+        </Text>
         <View style={styles.divider} />
 
         {/* TABLE HEADER */}
@@ -214,21 +258,39 @@ export function QuotationDocument(props: QuotationData) {
           </View>
         </View>
 
-        {/* TABLE ROW */}
-        <View style={styles.tableRow}>
-          <View style={styles.colRoom}>
-            <Text style={styles.roomNameText}>
-              {props.roomName} (Hab. {props.roomNumber})
-            </Text>
-            <Text style={styles.amenityText}>Desayuno incluido</Text>
+        {/* TABLE ROWS — one per room */}
+        {props.rooms.map((room, idx) => (
+          <View
+            key={idx}
+            style={idx < props.rooms.length - 1 ? styles.tableRow : styles.tableRowLast}
+          >
+            <View style={styles.colRoom}>
+              <Text style={styles.roomNameText}>{room.roomName}</Text>
+              <Text style={styles.amenityText}>
+                {room.adults} adulto{room.adults !== 1 ? 's' : ''}
+                {room.children > 0 ? ` · ${room.children} niño${room.children !== 1 ? 's' : ''}` : ''}
+                {'  ·  Desayuno incluido'}
+              </Text>
+            </View>
+            <View style={styles.colNight}>
+              <Text style={styles.priceNightText}>{fmt(room.pricePerNight)}</Text>
+            </View>
+            <View style={styles.colTotal}>
+              <Text style={styles.priceTotalText}>{fmt(room.subtotal)}</Text>
+            </View>
           </View>
-          <View style={styles.colNight}>
-            <Text style={styles.priceNightText}>{fmt(props.pricePerNight)}</Text>
-          </View>
-          <View style={styles.colTotal}>
-            <Text style={styles.priceTotalText}>{fmt(props.subtotal)}</Text>
-          </View>
-        </View>
+        ))}
+
+        {/* GRAND TOTAL */}
+        {props.rooms.length > 1 && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Total reserva</Text>
+              <Text style={styles.totalValue}>{fmt(props.grandSubtotal)}</Text>
+            </View>
+          </>
+        )}
 
         {/* FOOTER */}
         <View style={styles.footer}>
