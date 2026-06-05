@@ -12,11 +12,11 @@ export class RoleGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (!required) return true;
+    if (!required || required.trim() === '') return true;
 
     const { user } = context.switchToHttp().getRequest<{ user: JwtPayload }>();
     if (!user?.roles?.includes(required)) {
-      throw new ForbiddenException('Insufficient role');
+      throw new ForbiddenException('Insufficient permissions');
     }
     return true;
   }
