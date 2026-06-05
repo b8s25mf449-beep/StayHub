@@ -37,6 +37,21 @@ export default function RatesDrawer({ room, roomType, onClose }: Props) {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    // DB constraint: must provide both dates or neither
+    if ((form.startDate && !form.endDate) || (!form.startDate && form.endDate)) {
+      setError('Si indicás una fecha, debés completar ambas (Desde y Hasta).');
+      return;
+    }
+    if (form.startDate && form.endDate && form.startDate > form.endDate) {
+      setError('La fecha Desde debe ser anterior a la fecha Hasta.');
+      return;
+    }
+    if (Number(form.pricePerNight) <= 0) {
+      setError('El precio por noche debe ser mayor a 0.');
+      return;
+    }
+
     setSaving(true);
     try {
       await api.post('/api/v1/rates', {
@@ -176,23 +191,30 @@ export default function RatesDrawer({ room, roomType, onClose }: Props) {
                   className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-muted"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-muted uppercase tracking-wider block mb-1.5">Desde</label>
+              <div>
+                <label className="text-xs text-muted uppercase tracking-wider block mb-1.5">
+                  Rango de fechas
+                  <span className="normal-case ml-1 text-[10px] text-muted">(opcional — dejar vacío para todas las fechas)</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
                   <input
                     type="date"
+                    placeholder="Desde"
                     value={form.startDate}
                     onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                    className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-white"
+                    className={`input-field w-full bg-bg border rounded-lg px-3 py-2 text-sm text-white ${
+                      form.startDate && !form.endDate ? 'border-[#f87171]' : 'border-border'
+                    }`}
                   />
-                </div>
-                <div>
-                  <label className="text-xs text-muted uppercase tracking-wider block mb-1.5">Hasta</label>
                   <input
                     type="date"
+                    placeholder="Hasta"
                     value={form.endDate}
+                    min={form.startDate || undefined}
                     onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                    className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-white"
+                    className={`input-field w-full bg-bg border rounded-lg px-3 py-2 text-sm text-white ${
+                      form.endDate && !form.startDate ? 'border-[#f87171]' : 'border-border'
+                    }`}
                   />
                 </div>
               </div>

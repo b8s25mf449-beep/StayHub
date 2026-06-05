@@ -5,14 +5,16 @@ import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import { calcNights } from '@/lib/utils';
 import RoomSelectionManager, { type RoomLine } from './RoomSelectionManager';
-import type { Property, RoomType, Guest } from '@/types';
+import type { Property, Room, RoomType, Guest } from '@/types';
 
 export interface ReservationFormData {
   guest: Guest | null;
   propertyId: string;
-  /** Array of rooms in this reservation (1–5) */
+  /** Selected room lines — each references a real physical room */
   rooms: RoomLine[];
-  /** All room types for the selected property (needed by QuotationPanel) */
+  /** Physical rooms available for the property (fetched from DB) */
+  availableRooms: Room[];
+  /** Room types for name + price lookup */
   roomTypes: RoomType[];
   checkInDate: string;
   checkOutDate: string;
@@ -36,6 +38,10 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
     value.propertyId ? `/api/v1/room-types?propertyId=${value.propertyId}` : '/api/v1/room-types',
     fetcher,
   );
+  const { data: fetchedRooms = [] } = useSWR<Room[]>(
+    value.propertyId ? `/api/v1/rooms?propertyId=${value.propertyId}` : null,
+    fetcher,
+  );
   const { data: guestResults = [] } = useSWR<Guest[]>(
     guestSearch.length >= 2 ? `/api/v1/guests?search=${encodeURIComponent(guestSearch)}` : null,
     fetcher,
@@ -52,25 +58,36 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
   }
 
   function handlePropertyChange(propertyId: string) {
-    // Reset rooms to a single default room when property changes
-    onChange({ ...value, propertyId, rooms: [{ id: crypto.randomUUID(), roomTypeId: '', adults: 1, children: 0 }], roomTypes: [] });
+    onChange({
+      ...value,
+      propertyId,
+      rooms: [{ id: `line-${Date.now()}`, roomId: '', adults: 1, children: 0 }],
+      availableRooms: [],
+      roomTypes: [],
+    });
   }
 
-  // Keep roomTypes in sync with the SWR data
-  if (roomTypes.length > 0 && value.roomTypes !== roomTypes) {
-    const synced = roomTypes;
-    // Patch rooms that have no roomTypeId yet
-    const patchedRooms = value.rooms.map((r) =>
-      r.roomTypeId ? r : { ...r, roomTypeId: synced[0]?.id ?? '' },
-    );
-    onChange({ ...value, roomTypes: synced, rooms: patchedRooms });
+  // Sync fetched rooms + types into form state when they arrive
+  const roomsChanged = fetchedRooms.length > 0 && value.availableRooms !== fetchedRooms;
+  const typesChanged = roomTypes.length > 0 && value.roomTypes !== roomTypes;
+  if (roomsChanged || typesChanged) {
+    const patched = {
+      ...value,
+      availableRooms: fetchedRooms.length > 0 ? fetchedRooms : value.availableRooms,
+      roomTypes: roomTypes.length > 0 ? roomTypes : value.roomTypes,
+    };
+    // Pre-fill first room's roomId if blank
+    if (patched.rooms[0]?.roomId === '' && fetchedRooms[0]) {
+      patched.rooms = [{ ...patched.rooms[0], roomId: fetchedRooms[0].id }, ...patched.rooms.slice(1)];
+    }
+    onChange(patched);
   }
 
   const nights = value.checkInDate && value.checkOutDate
     ? calcNights(value.checkInDate, value.checkOutDate)
     : 0;
 
-  const hasValidRooms = value.rooms.length > 0 && value.rooms.every((r) => r.roomTypeId);
+  const hasValidRooms = value.rooms.length > 0 && value.rooms.every((r) => r.roomId);
   const canSubmit = !submitting && !!value.guest && hasValidRooms && nights > 0;
 
   return (
@@ -161,9 +178,10 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
         {!value.propertyId && (
           <p className="text-xs text-muted py-2">Seleccioná una propiedad primero</p>
         )}
-        {value.propertyId && value.roomTypes.length > 0 && (
+        {value.propertyId && value.availableRooms.length > 0 && (
           <RoomSelectionManager
             rooms={value.rooms}
+            availableRooms={value.availableRooms}
             roomTypes={value.roomTypes}
             nights={nights}
             onChange={(rooms) => set('rooms', rooms)}

@@ -24,11 +24,14 @@ export default function QuotationPanel({ data, tenantName, tenantPhone, tenantAd
 
   const roomLines: QuotationRoom[] = data.rooms
     .map((r) => {
-      const rt = data.roomTypes.find((t) => t.id === r.roomTypeId);
-      if (!rt) return null;
+      const physical = data.availableRooms?.find((p) => p.id === r.roomId);
+      const rt = physical
+        ? data.roomTypes.find((t) => t.id === physical.roomTypeId)
+        : undefined;
+      if (!physical || !rt) return null;
       const pricePerNight = Number(rt.basePrice);
       return {
-        roomName: rt.name,
+        roomName: `${rt.name} (Hab. ${physical.roomNumber})`,
         adults: r.adults,
         children: r.children,
         pricePerNight,

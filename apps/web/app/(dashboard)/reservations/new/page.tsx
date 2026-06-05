@@ -16,7 +16,8 @@ const TAX_RATE = 0.21;
 const EMPTY: ReservationFormData = {
   guest: null,
   propertyId: '',
-  rooms: [{ id: crypto.randomUUID(), roomTypeId: '', adults: 1, children: 0 }],
+  rooms: [{ id: `line-${Date.now()}`, roomId: '', adults: 1, children: 0 }],
+  availableRooms: [],
   roomTypes: [],
   checkInDate: '',
   checkOutDate: '',
@@ -38,7 +39,7 @@ export default function NewReservationPage() {
 
   async function handleSubmit() {
     if (!formData.guest || !formData.checkInDate || !formData.checkOutDate) return;
-    const validRooms = formData.rooms.filter((r) => r.roomTypeId);
+    const validRooms = formData.rooms.filter((r) => r.roomId);
     if (validRooms.length === 0) return;
 
     setSubmitting(true);
@@ -47,44 +48,16 @@ export default function NewReservationPage() {
     const nights = calcNights(formData.checkInDate, formData.checkOutDate);
 
     try {
-      // Get available rooms from the API for each room type requested
-      const roomsRes = await api.get<Array<{ id: string; roomTypeId: string; propertyId: string; roomNumber: string; status: string }>>(
-        `/api/v1/rooms?propertyId=${formData.propertyId}`,
-      );
-      const availableRooms = roomsRes.data.filter((r) => r.status === 'available');
-
-      // Match each RoomLine to an available physical room of that type
-      const assignments: Array<{ lineIdx: number; roomId: string }> = [];
-      const usedIds = new Set<string>();
-
-      for (let i = 0; i < validRooms.length; i++) {
-        const line = validRooms[i];
-        const match = availableRooms.find(
-          (r) => r.roomTypeId === line.roomTypeId && !usedIds.has(r.id),
-        );
-        if (!match) {
-          setError(
-            `No hay habitaciones disponibles de tipo "${
-              formData.roomTypes.find((t) => t.id === line.roomTypeId)?.name ?? 'seleccionado'
-            }" para las fechas elegidas.`,
-          );
-          setSubmitting(false);
-          return;
-        }
-        usedIds.add(match.id);
-        assignments.push({ lineIdx: i, roomId: match.id });
-      }
-
-      // Create one reservation per room
-      for (const { lineIdx, roomId } of assignments) {
-        const line = validRooms[lineIdx];
-        const rt = formData.roomTypes.find((t) => t.id === line.roomTypeId);
+      // Create one reservation per selected physical room
+      for (const line of validRooms) {
+        const physical = formData.availableRooms.find((r) => r.id === line.roomId);
+        const rt = formData.roomTypes.find((t) => t.id === physical?.roomTypeId);
         const baseAmount = Number(rt?.basePrice ?? 0) * nights;
         const taxesAmount = formData.requiresInvoice ? baseAmount * TAX_RATE : 0;
 
         await api.post('/api/v1/reservations', {
           propertyId: formData.propertyId,
-          roomId,
+          roomId: line.roomId,
           guestId: formData.guest!.id,
           checkInDate: formData.checkInDate,
           checkOutDate: formData.checkOutDate,
