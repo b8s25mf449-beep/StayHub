@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable, NotFoundException, ConflictException, ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, IsNull } from 'typeorm';
 import { User, UserStatus } from './entities/user.entity';
@@ -58,6 +60,31 @@ export class UsersService {
     }
     const { roleIds, ...rest } = dto;
     Object.assign(user, rest);
+    return this.userRepo.save(user);
+  }
+
+  async changeRole(tenantId: string, id: string, roleId: string, requesterId: string): Promise<User> {
+    if (id === requesterId) throw new ForbiddenException('Cannot change your own role');
+
+    const user = await this.findOne(tenantId, id);
+    const role = await this.roleRepo.findOne({ where: { id: roleId } });
+    if (!role) throw new NotFoundException('Role not found');
+    if (role.name === 'super_admin') throw new ForbiddenException('Cannot assign super_admin role');
+
+    user.roles = [role];
+    return this.userRepo.save(user);
+  }
+
+  async changeStatus(
+    tenantId: string,
+    id: string,
+    status: UserStatus.ACTIVE | UserStatus.SUSPENDED,
+    requesterId: string,
+  ): Promise<User> {
+    if (id === requesterId) throw new ForbiddenException('Cannot change your own status');
+
+    const user = await this.findOne(tenantId, id);
+    user.status = status;
     return this.userRepo.save(user);
   }
 
