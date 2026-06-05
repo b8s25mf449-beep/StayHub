@@ -25,6 +25,20 @@ export class RoomsController {
     return this.service.findAll(user.tenantId, propertyId);
   }
 
+  @Get('available')
+  @ApiOperation({ summary: 'List available rooms for a date range' })
+  @ApiQuery({ name: 'propertyId', required: true })
+  @ApiQuery({ name: 'checkIn', required: true })
+  @ApiQuery({ name: 'checkOut', required: true })
+  findAvailable(
+    @CurrentUser() user: JwtPayload,
+    @Query('propertyId') propertyId: string,
+    @Query('checkIn') checkIn: string,
+    @Query('checkOut') checkOut: string,
+  ) {
+    return this.service.findAvailable(user.tenantId, propertyId, checkIn, checkOut);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get room' })
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {

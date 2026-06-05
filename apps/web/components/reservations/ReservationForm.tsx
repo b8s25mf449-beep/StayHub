@@ -38,7 +38,6 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
   const [showGuestResults, setShowGuestResults] = useState(false);
 
   /* ── Reference data (local only, not in parent state) ── */
-  const [localRooms, setLocalRooms] = useState<Room[]>([]);
   const [localTypes, setLocalTypes] = useState<RoomType[]>([]);
 
   /* Refs to latest value/onChange — prevents stale closures in effects */
@@ -48,8 +47,15 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
   useEffect(() => { onChangeRef.current = onChange; });
 
   const { data: properties = [] } = useSWR<Property[]>('/api/v1/properties', fetcher);
-  const { data: fetchedRooms = [] } = useSWR<Room[]>(
-    value.propertyId ? `/api/v1/rooms?propertyId=${value.propertyId}` : null,
+
+  const datesReady = !!(
+    value.propertyId && value.checkInDate && value.checkOutDate &&
+    calcNights(value.checkInDate, value.checkOutDate) > 0
+  );
+  const { data: fetchedRooms = [], isLoading: loadingRooms } = useSWR<Room[]>(
+    datesReady
+      ? `/api/v1/rooms/available?propertyId=${value.propertyId}&checkIn=${value.checkInDate}&checkOut=${value.checkOutDate}`
+      : null,
     fetcher,
   );
   const { data: fetchedTypes = [] } = useSWR<RoomType[]>(
@@ -63,43 +69,35 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
     fetcher,
   );
 
-  /* ── Sync rooms + types + pre-fill in a single reliable effect ── */
+  /* ── Sync types ── */
   useEffect(() => {
     if (fetchedTypes.length > 0) setLocalTypes(fetchedTypes);
   }, [fetchedTypes]);
 
+  /* ── When available rooms load: auto-select first if empty, clear unavailable ── */
   useEffect(() => {
     if (fetchedRooms.length === 0) return;
-    setLocalRooms(fetchedRooms);
-    if (valueRef.current.rooms[0]?.roomId === '') {
-      onChangeRef.current({
-        ...valueRef.current,
-        rooms: [
-          { ...valueRef.current.rooms[0], roomId: fetchedRooms[0].id },
-          ...valueRef.current.rooms.slice(1),
-        ],
-      });
+    const availableIds = new Set(fetchedRooms.map((r) => r.id));
+    const current = valueRef.current;
+    let changed = false;
+    const updatedRooms = current.rooms.map((line) => {
+      if (line.roomId && !availableIds.has(line.roomId)) {
+        changed = true;
+        return { ...line, roomId: fetchedRooms[0].id };
+      }
+      return line;
+    });
+    if (updatedRooms[0]?.roomId === '') {
+      changed = true;
+      updatedRooms[0] = { ...updatedRooms[0], roomId: fetchedRooms[0].id };
     }
+    if (changed) onChangeRef.current({ ...current, rooms: updatedRooms });
   }, [fetchedRooms]);
 
-  /* ── Reset local data when property changes ── */
+  /* ── Reset when property changes ── */
   function handlePropertyChange(propertyId: string) {
-    setLocalRooms([]);
     setLocalTypes([]);
     onChange({ ...value, propertyId, rooms: [{ id: `line-${Date.now()}`, roomId: '', adults: 1, children: 0 }] });
-    if (fetchedRooms.length > 0) {
-      setTimeout(() => {
-        if (valueRef.current.rooms[0]?.roomId === '') {
-          onChangeRef.current({
-            ...valueRef.current,
-            rooms: [
-              { ...valueRef.current.rooms[0], roomId: fetchedRooms[0].id },
-              ...valueRef.current.rooms.slice(1),
-            ],
-          });
-        }
-      }, 0);
-    }
   }
 
   function set<K extends keyof ReservationFormData>(key: K, val: ReservationFormData[K]) {
@@ -317,13 +315,19 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
         {!value.propertyId && (
           <p className="text-xs text-muted py-2">Seleccioná una propiedad primero</p>
         )}
-        {value.propertyId && localRooms.length === 0 && (
-          <p className="text-xs text-muted py-2">Cargando habitaciones...</p>
+        {value.propertyId && !datesReady && (
+          <p className="text-xs text-muted py-2">Seleccioná las fechas para ver disponibilidad</p>
         )}
-        {value.propertyId && localRooms.length > 0 && (
+        {datesReady && loadingRooms && (
+          <p className="text-xs text-muted py-2">Verificando disponibilidad...</p>
+        )}
+        {datesReady && !loadingRooms && fetchedRooms.length === 0 && (
+          <p className="text-xs text-[#fb923c] py-2">No hay habitaciones disponibles para esas fechas</p>
+        )}
+        {datesReady && !loadingRooms && fetchedRooms.length > 0 && (
           <RoomSelectionManager
             rooms={value.rooms}
-            availableRooms={localRooms}
+            availableRooms={fetchedRooms}
             roomTypes={localTypes}
             nights={nights}
             onChange={(rooms) => set('rooms', rooms)}
