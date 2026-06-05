@@ -9,6 +9,7 @@ import {
   Calendar,
   BedDouble,
   Globe2,
+  Settings,
   LogOut,
 } from 'lucide-react';
 
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuth();
+  const isSuperAdmin = user?.roles?.includes('super_admin') ?? false;
 
   function isActive(href: string) {
     if (href === '/') return pathname === '/';
@@ -57,6 +59,19 @@ export default function Sidebar() {
       })}
 
       <div className="mt-auto flex flex-col items-center gap-2">
+        {isSuperAdmin && (
+          <Link
+            href="/settings/team"
+            title="Configuración"
+            data-active={pathname.startsWith('/settings') ? 'true' : undefined}
+            className={`relative w-9 h-9 rounded-lg flex items-center justify-center press nav-hover ${
+              pathname.startsWith('/settings') ? 'bg-[#0f766e22] text-primary' : 'text-muted'
+            }`}
+          >
+            <span className="nav-indicator absolute -left-2 top-1/2 w-0.5 h-5 bg-primary rounded-r" />
+            <Settings size={16} />
+          </Link>
+        )}
         <button
           onClick={logout}
           title="Cerrar sesión"
