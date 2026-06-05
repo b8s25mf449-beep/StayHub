@@ -56,14 +56,15 @@ export default function StatsGrid() {
 
   return (
     <div className="grid grid-cols-4 gap-3.5 mb-6">
-      {stats.map((s) => (
+      {stats.map((s, i) => (
         <div
           key={s.label}
-          className={`rounded-xl p-4 border ${
+          className={`rounded-xl p-4 border animate-fade-up ${
             s.highlight
               ? 'bg-[#0f766e08] border-[#0f766e44]'
               : 'bg-card border-border'
           }`}
+          style={{ animationDelay: `${i * 50}ms` }}
         >
           <p className="text-xs text-muted uppercase tracking-wider mb-2">{s.label}</p>
           <p className={`text-2xl font-bold font-mono ${s.highlight ? 'text-primary-light' : 'text-white'}`}>

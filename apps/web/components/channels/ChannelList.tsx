@@ -96,7 +96,7 @@ export default function ChannelList() {
                     <button
                       onClick={() => handleSync(c.id)}
                       disabled={syncing === c.id}
-                      className="text-xs bg-surface border border-border hover:border-primary text-[#ccc] hover:text-white px-3 py-1.5 rounded-lg transition-all disabled:opacity-40"
+                      className="press text-xs bg-surface border border-border text-[#ccc] px-3 py-1.5 rounded-lg disabled:opacity-40"
                     >
                       {syncing === c.id ? 'Sincronizando...' : 'Sincronizar'}
                     </button>
@@ -111,12 +111,12 @@ export default function ChannelList() {
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
-          className="text-sm bg-primary hover:bg-[#0d6962] text-white px-4 py-2 rounded-lg transition-colors"
+          className="press text-sm bg-primary text-white px-4 py-2 rounded-lg"
         >
           + Nueva conexión
         </button>
       ) : (
-        <form onSubmit={handleCreate} className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <form onSubmit={handleCreate} className="bg-card border border-border rounded-xl p-5 space-y-4 animate-fade-up">
           <h3 className="text-sm font-semibold text-white">Nueva conexión OTA</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -124,7 +124,7 @@ export default function ChannelList() {
               <select
                 value={form.channel}
                 onChange={(e) => setForm({ ...form, channel: e.target.value as typeof CHANNEL_OPTIONS[number] })}
-                className="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white outline-none"
+                className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white"
               >
                 {CHANNEL_OPTIONS.map((c) => (
                   <option key={c} value={c}>{CHANNEL_LABELS[c]}</option>
@@ -136,7 +136,7 @@ export default function ChannelList() {
               <select
                 value={form.propertyId}
                 onChange={(e) => setForm({ ...form, propertyId: e.target.value, roomId: '' })}
-                className="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white outline-none"
+                className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white"
               >
                 <option value="">Seleccionar...</option>
                 {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -148,7 +148,7 @@ export default function ChannelList() {
                 value={form.roomId}
                 onChange={(e) => setForm({ ...form, roomId: e.target.value })}
                 disabled={!form.propertyId}
-                className="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white outline-none disabled:opacity-40"
+                className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white disabled:opacity-40"
               >
                 <option value="">Seleccionar...</option>
                 {roomsByProperty.map((r) => <option key={r.id} value={r.id}>Hab. {r.roomNumber}</option>)}
@@ -162,15 +162,15 @@ export default function ChannelList() {
                 onChange={(e) => setForm({ ...form, icalUrl: e.target.value })}
                 placeholder="https://..."
                 required
-                className="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder-muted outline-none focus:border-primary"
+                className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder-muted"
               />
             </div>
           </div>
           <div className="flex gap-3">
-            <button type="submit" className="bg-primary hover:bg-[#0d6962] text-white text-sm px-4 py-2 rounded-lg">
+            <button type="submit" className="press bg-primary text-white text-sm px-4 py-2 rounded-lg">
               Guardar
             </button>
-            <button type="button" onClick={() => setShowForm(false)} className="bg-surface border border-border text-[#ccc] text-sm px-4 py-2 rounded-lg hover:border-muted">
+            <button type="button" onClick={() => setShowForm(false)} className="press bg-surface border border-border text-[#ccc] text-sm px-4 py-2 rounded-lg">
               Cancelar
             </button>
           </div>

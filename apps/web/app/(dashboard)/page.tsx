@@ -5,7 +5,7 @@ import RecentReservations from '@/components/dashboard/RecentReservations';
 export default function DashboardPage() {
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 animate-fade-up delay-0">
         <h2 className="text-lg font-semibold">Dashboard</h2>
       </div>
       <StatsGrid />

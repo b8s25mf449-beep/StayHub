@@ -26,7 +26,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 animate-fade-up delay-0">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white font-bold text-lg mx-auto mb-4">
             S
           </div>
@@ -34,14 +34,14 @@ export default function LoginPage() {
           <p className="text-muted text-sm mt-1">Acceso al panel de gestión</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-xl p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-xl p-6 space-y-4 animate-fade-up delay-75">
           <div>
             <label className="text-xs text-muted uppercase tracking-wider block mb-2">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder-muted outline-none focus:border-primary transition-colors"
+              className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder-muted"
               placeholder="admin@hotel.com"
               required
             />
@@ -52,16 +52,18 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder-muted outline-none focus:border-primary transition-colors"
+              className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder-muted"
               placeholder="••••••••"
               required
             />
           </div>
-          {error && <p className="text-[#f87171] text-xs">{error}</p>}
+          {error && (
+            <p className="text-[#f87171] text-xs animate-fade-in">{error}</p>
+          )}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:bg-[#0d6962] text-white rounded-lg py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+            className="press w-full bg-primary text-white rounded-lg py-2.5 text-sm font-medium disabled:opacity-50"
           >
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>

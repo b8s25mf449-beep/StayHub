@@ -6,6 +6,7 @@ import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
 import { ROOM_STATUS_COLORS, ROOM_STATUS_LABELS } from '@/lib/utils';
 import type { Room, RoomType } from '@/types';
+import { Pencil, DollarSign, Trash2, Check } from 'lucide-react';
 import RatesDrawer from './RatesDrawer';
 import EditRoomModal from './EditRoomModal';
 
@@ -89,16 +90,13 @@ export default function RoomGrid() {
                     key={s}
                     onClick={(e) => { e.stopPropagation(); updateStatus(room, s); }}
                     disabled={room.status === s || updating === room.id}
-                    className="press w-full text-left px-3 py-1.5 text-xs text-[#ccc] hover:bg-card disabled:opacity-40"
+                    className="press w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#ccc] hover:bg-card disabled:opacity-40"
                   >
-                    {updating === room.id && room.status !== s ? (
-                      <span className="opacity-50">{ROOM_STATUS_LABELS[s]}</span>
-                    ) : (
-                      <>
-                        {room.status === s && <span className="text-primary mr-1">✓</span>}
-                        {ROOM_STATUS_LABELS[s]}
-                      </>
-                    )}
+                    <Check
+                      size={10}
+                      className={`flex-shrink-0 transition-opacity ${room.status === s ? 'opacity-100 text-primary' : 'opacity-0'}`}
+                    />
+                    {ROOM_STATUS_LABELS[s]}
                   </button>
                 ))}
 
@@ -106,21 +104,24 @@ export default function RoomGrid() {
                 <div className="border-t border-border mt-1 pt-1">
                   <button
                     onClick={(e) => { e.stopPropagation(); setEditRoom(room); }}
-                    className="press w-full text-left px-3 py-1.5 text-xs text-[#ccc] hover:bg-card"
+                    className="press w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#ccc] hover:bg-card"
                   >
-                    ✏️ Editar habitación
+                    <Pencil size={11} className="flex-shrink-0" />
+                    Editar
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setRatesRoom(room); }}
-                    className="press w-full text-left px-3 py-1.5 text-xs text-primary hover:bg-card"
+                    className="press w-full flex items-center gap-2 px-3 py-1.5 text-xs text-primary hover:bg-card"
                   >
-                    💰 Gestionar tarifas
+                    <DollarSign size={11} className="flex-shrink-0" />
+                    Tarifas
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setConfirmDelete(room); }}
-                    className="press w-full text-left px-3 py-1.5 text-xs text-[#f87171] hover:bg-card"
+                    className="press w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#f87171] hover:bg-card"
                   >
-                    🗑 Eliminar
+                    <Trash2 size={11} className="flex-shrink-0" />
+                    Eliminar
                   </button>
                 </div>
               </div>
@@ -166,7 +167,11 @@ export default function RoomGrid() {
 
       {/* Edit modal */}
       {editRoom && (
-        <EditRoomModal room={editRoom} onClose={() => setEditRoom(null)} />
+        <EditRoomModal
+          room={editRoom}
+          onClose={() => setEditRoom(null)}
+          onManageRates={(r) => { setEditRoom(null); setRatesRoom(r); }}
+        />
       )}
 
       {/* Rates drawer */}

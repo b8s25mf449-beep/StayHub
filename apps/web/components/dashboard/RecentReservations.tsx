@@ -18,7 +18,7 @@ export default function RecentReservations() {
     .slice(0, 5);
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4">
+    <div className="bg-card border border-border rounded-xl p-4 animate-fade-up delay-150">
       <h3 className="text-xs text-muted uppercase tracking-wider mb-3">Últimas reservas</h3>
       <table className="w-full text-sm">
         <thead>
@@ -31,11 +31,20 @@ export default function RecentReservations() {
           </tr>
         </thead>
         <tbody>
-          {recent.map((r) => {
+          {recent.map((r, i) => {
             const g = guestMap[r.guestId];
             const room = roomMap[r.roomId];
             return (
-              <tr key={r.id} className="border-t border-border hover:bg-[#0f1520]">
+              <tr
+                key={r.id}
+                className="border-t border-border animate-fade-up"
+                style={{
+                  animationDelay: `${200 + i * 40}ms`,
+                  transition: 'background-color 150ms cubic-bezier(0.23, 1, 0.32, 1)',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#0f1520')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
+              >
                 <td className="py-2.5 pr-3 font-mono text-xs text-muted">{r.confirmationNumber}</td>
                 <td className="py-2.5 pr-3 text-white">
                   {g ? `${g.firstName} ${g.lastName}` : '—'}

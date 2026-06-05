@@ -28,7 +28,7 @@ export default function RevenueChart() {
     .join(' ');
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4">
+    <div className="bg-card border border-border rounded-xl p-4 animate-fade-up delay-100">
       <h3 className="text-xs text-muted uppercase tracking-wider mb-3">Ingresos últimos 30 días</h3>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-20">
         <defs>

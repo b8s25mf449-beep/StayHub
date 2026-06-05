@@ -3,21 +3,171 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  }
+
   * {
     box-sizing: border-box;
   }
+
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
   ::-webkit-scrollbar-track {
-    background: #0d1117;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #1a2535;
-    border-radius: 3px;
+    background: #1e2d3d;
+    border-radius: 99px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #2a3545;
+    background: #2a3f52;
+  }
+}
+
+/* ── Animations ──────────────────────────────── */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Side drawer — slides from right, iOS-like easing */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  from { background-position: -400% center; }
+  to   { background-position:  400% center; }
+}
+
+/* ── Entry utilities ─────────────────────────── */
+.animate-fade-up {
+  animation: fade-up 280ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.animate-fade-in {
+  animation: fade-in 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* iOS-style drawer easing (cubic-bezier(0.32, 0.72, 0, 1)) */
+.animate-slide-in-right {
+  animation: slide-in-right 300ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Stagger helpers */
+.delay-0   { animation-delay:   0ms; }
+.delay-50  { animation-delay:  50ms; }
+.delay-75  { animation-delay:  75ms; }
+.delay-100 { animation-delay: 100ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-250 { animation-delay: 250ms; }
+.delay-300 { animation-delay: 300ms; }
+
+/* ── Skeleton shimmer ────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #131a24 25%,
+    #1a2535 50%,
+    #131a24 75%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 6px;
+}
+
+/* ── Button press — apply to any pressable element ── */
+@layer utilities {
+  .press {
+    transition:
+      transform 140ms cubic-bezier(0.23, 1, 0.32, 1),
+      background-color 140ms cubic-bezier(0.23, 1, 0.32, 1),
+      border-color 140ms cubic-bezier(0.23, 1, 0.32, 1),
+      color 100ms cubic-bezier(0.23, 1, 0.32, 1),
+      box-shadow 140ms cubic-bezier(0.23, 1, 0.32, 1),
+      opacity 140ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .press:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  /* Input focus glow */
+  .input-field {
+    transition:
+      border-color 150ms cubic-bezier(0.23, 1, 0.32, 1),
+      box-shadow 150ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .input-field:focus {
+    border-color: #0f766e;
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+    outline: none;
+  }
+}
+
+/* ── Sidebar nav indicator — animates on active state ── */
+.nav-indicator {
+  opacity: 0;
+  transform: translateY(-50%) scaleY(0.4);
+  transition:
+    opacity 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+  transform-origin: center;
+}
+
+[data-active='true'] .nav-indicator {
+  opacity: 1;
+  transform: translateY(-50%) scaleY(1);
+}
+
+/* ── Sidebar hover — only on true hover devices ── */
+@media (hover: hover) and (pointer: fine) {
+  .nav-hover:hover {
+    background-color: #1a2035;
+    color: #cccccc;
+  }
+  .nav-hover-danger:hover {
+    background-color: #1a2035;
+    color: #f87171;
+  }
+}
+
+/* ── Room card — scale hover gated for pointer devices + press ── */
+.room-card {
+  transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.room-card:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .room-card:hover {
+    transform: scale(1.03);
+    z-index: 10;
   }
 }

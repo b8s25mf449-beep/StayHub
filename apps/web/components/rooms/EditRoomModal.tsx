@@ -6,14 +6,15 @@ import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
 import type { Room, RoomType } from '@/types';
-import { X } from 'lucide-react';
+import { X, DollarSign, ChevronRight } from 'lucide-react';
 
 interface Props {
   room: Room;
   onClose: () => void;
+  onManageRates: (room: Room) => void;
 }
 
-export default function EditRoomModal({ room, onClose }: Props) {
+export default function EditRoomModal({ room, onClose, onManageRates }: Props) {
   const { data: roomTypes = [] } = useSWR<RoomType[]>('/api/v1/room-types', fetcher);
 
   const [form, setForm] = useState({
@@ -52,13 +53,14 @@ export default function EditRoomModal({ room, onClose }: Props) {
       />
       <div className="relative z-10 w-full max-w-sm bg-surface border border-border rounded-xl p-6 animate-fade-up shadow-2xl">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-base font-semibold">Editar habitación {room.roomNumber}</h2>
+          <h2 className="text-base font-semibold">Editar hab. {room.roomNumber}</h2>
           <button onClick={onClose} className="press text-muted p-1 rounded-lg nav-hover">
             <X size={16} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Room type */}
           <div>
             <label className="text-xs text-muted uppercase tracking-wider block mb-2">
               Tipo de habitación
@@ -70,18 +72,15 @@ export default function EditRoomModal({ room, onClose }: Props) {
               className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white"
             >
               {roomTypes.map((rt) => (
-                <option key={rt.id} value={rt.id}>
-                  {rt.name}
-                </option>
+                <option key={rt.id} value={rt.id}>{rt.name}</option>
               ))}
             </select>
           </div>
 
+          {/* Number + floor */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-muted uppercase tracking-wider block mb-2">
-                Número
-              </label>
+              <label className="text-xs text-muted uppercase tracking-wider block mb-2">Número</label>
               <input
                 required
                 type="text"
@@ -91,9 +90,7 @@ export default function EditRoomModal({ room, onClose }: Props) {
               />
             </div>
             <div>
-              <label className="text-xs text-muted uppercase tracking-wider block mb-2">
-                Piso
-              </label>
+              <label className="text-xs text-muted uppercase tracking-wider block mb-2">Piso</label>
               <input
                 type="text"
                 value={form.floor}
@@ -104,9 +101,25 @@ export default function EditRoomModal({ room, onClose }: Props) {
             </div>
           </div>
 
+          {/* Price shortcut */}
+          <button
+            type="button"
+            onClick={() => { onClose(); onManageRates(room); }}
+            className="press w-full flex items-center justify-between px-3 py-2.5 bg-bg border border-border rounded-lg group"
+            style={{ transition: 'border-color 140ms cubic-bezier(0.23, 1, 0.32, 1)' }}
+          >
+            <div className="flex items-center gap-2 text-sm text-[#ccc]">
+              <DollarSign size={13} className="text-muted" />
+              Gestionar tarifas
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted">
+              <ChevronRight size={13} />
+            </div>
+          </button>
+
           {error && <p className="text-[#f87171] text-xs animate-fade-in">{error}</p>}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-1">
             <button
               type="submit"
               disabled={loading}

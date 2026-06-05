@@ -88,7 +88,7 @@ export default function RatesDrawer({ room, roomType, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="absolute inset-0 bg-black/50 animate-fade-in" onClick={onClose} />
-      <div className="relative z-10 ml-auto w-full max-w-sm h-full bg-surface border-l border-border flex flex-col animate-fade-up shadow-2xl">
+      <div className="relative z-10 ml-auto w-full max-w-sm h-full bg-surface border-l border-border flex flex-col animate-slide-in-right shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
             <h2 className="text-sm font-semibold">Tarifas — Hab. {room.roomNumber}</h2>
