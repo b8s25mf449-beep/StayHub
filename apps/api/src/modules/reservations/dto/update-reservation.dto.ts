@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsEnum, IsString, IsDateString } from 'class-validator';
+import { IsOptional, IsEnum, IsString, IsDateString, IsNumber, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ReservationStatus } from '../entities/reservation.entity';
 
 export class UpdateReservationDto {
@@ -8,4 +9,7 @@ export class UpdateReservationDto {
   @ApiPropertyOptional() @IsOptional() @IsDateString() checkOutDate?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() notes?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() cancellationReason?: string;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0) @Type(() => Number) baseAmount?: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0) @Type(() => Number) totalAmount?: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0) @Type(() => Number) taxesAmount?: number;
 }

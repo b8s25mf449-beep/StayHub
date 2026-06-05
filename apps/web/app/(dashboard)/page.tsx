@@ -1,6 +1,7 @@
 import StatsGrid from '@/components/dashboard/StatsGrid';
 import RevenueChart from '@/components/dashboard/RevenueChart';
 import RecentReservations from '@/components/dashboard/RecentReservations';
+import PendingReservations from '@/components/dashboard/PendingReservations';
 
 export default function DashboardPage() {
   return (
@@ -14,6 +15,7 @@ export default function DashboardPage() {
           <RevenueChart />
         </div>
       </div>
+      <PendingReservations />
       <RecentReservations />
     </div>
   );
