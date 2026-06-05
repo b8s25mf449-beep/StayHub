@@ -1,14 +1,16 @@
-import RoomCalendar from '@/components/calendar/RoomCalendar';
+import PmsCalendar from '@/components/calendar/PmsCalendar';
 
 export default function CalendarPage() {
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold">Calendario</h2>
-        <p className="text-xs text-muted">Próximos 14 días</p>
+      <div className="mb-6 animate-fade-up delay-0">
+        <h2 className="text-lg font-semibold">Tablón de reservas</h2>
+        <p className="text-xs text-muted mt-1">
+          Hacé clic en una celda vacía para crear una reserva · Clic en un bloque para ver detalles
+        </p>
       </div>
-      <div className="bg-card border border-border rounded-xl p-4">
-        <RoomCalendar />
+      <div className="animate-fade-up delay-50">
+        <PmsCalendar />
       </div>
     </div>
   );
