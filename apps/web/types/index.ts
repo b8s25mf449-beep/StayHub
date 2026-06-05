@@ -67,6 +67,25 @@ export interface Guest {
   totalStays: number;
 }
 
+export interface RoleOption {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+export interface UserWithRoles {
+  id: string;
+  tenantId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  status: 'active' | 'inactive' | 'suspended' | 'pending_verification';
+  roles: RoleOption[];
+  lastLoginAt: string | null;
+  createdAt: string;
+}
+
 export type ReservationStatus =
   | 'inquiry' | 'pending' | 'confirmed'
   | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
