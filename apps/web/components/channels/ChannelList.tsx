@@ -2,26 +2,46 @@
 
 import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
+import { RefreshCw, Plus, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
 import { CHANNEL_LABELS, formatDate } from '@/lib/utils';
-import type { ChannelConnection, Room, Property } from '@/types';
+import type { ChannelConnection, Room, Property, SyncResult } from '@/types';
 
 const CHANNEL_OPTIONS = ['booking_com', 'airbnb', 'expedia', 'ical', 'vrbo'] as const;
 
-const CONN_STATUS_COLORS: Record<string, string> = {
-  active: 'bg-[#0f766e22] text-[#0f766e]',
-  inactive: 'bg-[#1a2535] text-[#4a5a6c]',
-  error: 'bg-[#dc262622] text-[#f87171]',
-  syncing: 'bg-[#0369a122] text-[#38bdf8]',
+const CHANNEL_ICONS: Record<string, string> = {
+  booking_com: '🔵',
+  airbnb: '🔴',
+  expedia: '🟡',
+  expedia_partner: '🟡',
+  ical: '📅',
+  vrbo: '🟢',
 };
+
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  active:   { label: 'Activo',        className: 'bg-[#0f766e22] text-primary' },
+  inactive: { label: 'Inactivo',      className: 'bg-[#1a2535] text-muted' },
+  error:    { label: 'Error',         className: 'bg-[#dc262622] text-[#f87171]' },
+  syncing:  { label: 'Sincronizando', className: 'bg-[#0369a122] text-[#38bdf8] animate-pulse' },
+};
+
+interface SyncFeedback {
+  id: string;
+  result: SyncResult;
+  error?: string;
+}
 
 export default function ChannelList() {
   const { data: connections = [] } = useSWR<ChannelConnection[]>('/api/v1/channels', fetcher);
   const { data: rooms = [] } = useSWR<Room[]>('/api/v1/rooms', fetcher);
   const { data: properties = [] } = useSWR<Property[]>('/api/v1/properties', fetcher);
+
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<SyncFeedback | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
   const [form, setForm] = useState({
     propertyId: '',
     roomId: '',
@@ -34,9 +54,15 @@ export default function ChannelList() {
 
   async function handleSync(id: string) {
     setSyncing(id);
+    setFeedback(null);
     try {
-      await api.post(`/api/v1/channels/${id}/sync`);
+      const { data: result } = await api.post<SyncResult>(`/api/v1/channels/${id}/sync`);
       mutate('/api/v1/channels');
+      setFeedback({ id, result });
+      setTimeout(() => setFeedback(null), 8000);
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } }; message?: string };
+      setFeedback({ id, result: { imported: 0, updated: 0, skipped: 0, errors: [] }, error: err?.response?.data?.message ?? err?.message ?? 'Error al sincronizar' });
     } finally {
       setSyncing(null);
     }
@@ -44,19 +70,67 @@ export default function ChannelList() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    await api.post('/api/v1/channels', form);
+    setSubmitting(true);
+    setFormError('');
+    try {
+      await api.post('/api/v1/channels', form);
+      mutate('/api/v1/channels');
+      setShowForm(false);
+      setForm({ propertyId: '', roomId: '', channel: 'booking_com', icalUrl: '' });
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      setFormError(err?.response?.data?.message ?? 'Error al guardar');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('¿Eliminar esta conexión?')) return;
+    await api.delete(`/api/v1/channels/${id}`);
     mutate('/api/v1/channels');
-    setShowForm(false);
-    setForm({ propertyId: '', roomId: '', channel: 'booking_com', icalUrl: '' });
   }
 
   return (
-    <div>
-      <div className="bg-card border border-border rounded-xl overflow-hidden mb-4">
+    <div className="space-y-4 animate-fade-up delay-50">
+      {/* Sync feedback banner */}
+      {feedback && (
+        <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm animate-fade-up ${
+          feedback.error
+            ? 'bg-[#dc262615] border-[#dc262644] text-[#f87171]'
+            : 'bg-[#0f766e0a] border-[#0f766e33] text-white'
+        }`}>
+          {feedback.error
+            ? <AlertCircle size={15} className="mt-0.5 flex-shrink-0 text-[#f87171]" />
+            : <CheckCircle2 size={15} className="mt-0.5 flex-shrink-0 text-primary" />
+          }
+          <div className="flex-1">
+            {feedback.error ? (
+              <span>{feedback.error}</span>
+            ) : (
+              <span>
+                Sync completado —{' '}
+                <span className="font-medium">{feedback.result.imported} importadas</span>
+                {feedback.result.updated > 0 && `, ${feedback.result.updated} actualizadas`}
+                {feedback.result.skipped > 0 && `, ${feedback.result.skipped} sin cambios`}
+                {feedback.result.errors.length > 0 && (
+                  <span className="text-[#fb923c]"> · {feedback.result.errors.length} errores</span>
+                )}
+              </span>
+            )}
+          </div>
+          <button onClick={() => setFeedback(null)} className="text-muted hover:text-white">
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
+      {/* Connections table */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="bg-surface">
-              {['Canal', 'Habitación', 'Estado', 'Último sync', 'Reservas', ''].map((h) => (
+              {['Canal', 'Habitación', 'Estado', 'Último sync', 'Importadas', ''].map((h) => (
                 <th key={h} className="text-left text-xs text-muted uppercase tracking-wider px-4 py-3 font-medium">
                   {h}
                 </th>
@@ -64,60 +138,96 @@ export default function ChannelList() {
             </tr>
           </thead>
           <tbody>
-            {connections.length === 0 && (
+            {connections.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center text-muted py-8 text-sm">
-                  No hay conexiones. Agregá un canal para sincronizar reservas.
+                <td colSpan={6} className="text-center text-muted py-10 text-sm">
+                  No hay conexiones. Agregá un canal para sincronizar reservas automáticamente.
                 </td>
               </tr>
+            ) : (
+              connections.map((c) => {
+                const room = roomMap[c.roomId];
+                const status = STATUS_CONFIG[c.status] ?? STATUS_CONFIG.inactive;
+                const isSyncing = syncing === c.id;
+                return (
+                  <tr key={c.id} className="border-t border-border group hover:bg-[#0f1520] transition-colors">
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-medium text-white flex items-center gap-2">
+                        <span className="text-base leading-none">{CHANNEL_ICONS[c.channel] ?? '🌐'}</span>
+                        {CHANNEL_LABELS[c.channel]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted">
+                      Hab. {room?.roomNumber ?? '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${status.className}`}>
+                        {status.label}
+                      </span>
+                      {c.lastError && (
+                        <p className="text-[10px] text-[#f87171] mt-0.5 max-w-[160px] truncate" title={c.lastError}>
+                          {c.lastError}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted">
+                      {c.lastSyncAt ? formatDate(c.lastSyncAt.split('T')[0]) : '—'}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted">
+                      {c.lastSyncCount ?? 0}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleSync(c.id)}
+                          disabled={isSyncing}
+                          className="press flex items-center gap-1.5 text-xs bg-surface border border-border text-[#ccc] px-3 py-1.5 rounded-lg disabled:opacity-40 hover:border-[#0f766e44] hover:text-white transition-colors"
+                        >
+                          <RefreshCw size={11} className={isSyncing ? 'animate-spin' : ''} />
+                          {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(c.id)}
+                          className="press text-xs text-muted hover:text-[#f87171] px-2 py-1.5 rounded-lg transition-colors"
+                          title="Eliminar conexión"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
-            {connections.map((c) => {
-              const room = roomMap[c.roomId];
-              return (
-                <tr key={c.id} className="border-t border-border hover:bg-[#0f1520]">
-                  <td className="px-4 py-3 text-white text-sm font-medium">
-                    {CHANNEL_LABELS[c.channel]}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted">
-                    Hab. {room?.roomNumber ?? '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${CONN_STATUS_COLORS[c.status]}`}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted">
-                    {c.lastSyncAt ? formatDate(c.lastSyncAt.split('T')[0]) : '—'}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted">
-                    {c.lastSyncCount ?? 0}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleSync(c.id)}
-                      disabled={syncing === c.id}
-                      className="press text-xs bg-surface border border-border text-[#ccc] px-3 py-1.5 rounded-lg disabled:opacity-40"
-                    >
-                      {syncing === c.id ? 'Sincronizando...' : 'Sincronizar'}
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
           </tbody>
         </table>
       </div>
 
+      {/* Add connection form */}
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
-          className="press text-sm bg-primary text-white px-4 py-2 rounded-lg"
+          className="press flex items-center gap-2 text-sm bg-primary text-white px-4 py-2.5 rounded-lg font-medium"
         >
-          + Nueva conexión
+          <Plus size={14} />
+          Nueva conexión
         </button>
       ) : (
-        <form onSubmit={handleCreate} className="bg-card border border-border rounded-xl p-5 space-y-4 animate-fade-up">
-          <h3 className="text-sm font-semibold text-white">Nueva conexión OTA</h3>
+        <form
+          onSubmit={handleCreate}
+          className="bg-card border border-border rounded-xl p-5 space-y-4 animate-fade-up"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-white">Nueva conexión OTA</h3>
+            <button
+              type="button"
+              onClick={() => { setShowForm(false); setFormError(''); }}
+              className="text-muted hover:text-white"
+            >
+              <X size={15} />
+            </button>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-muted uppercase tracking-wider block mb-2">Canal</label>
@@ -127,10 +237,11 @@ export default function ChannelList() {
                 className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white"
               >
                 {CHANNEL_OPTIONS.map((c) => (
-                  <option key={c} value={c}>{CHANNEL_LABELS[c]}</option>
+                  <option key={c} value={c}>{CHANNEL_ICONS[c]} {CHANNEL_LABELS[c]}</option>
                 ))}
               </select>
             </div>
+
             <div>
               <label className="text-xs text-muted uppercase tracking-wider block mb-2">Propiedad</label>
               <select
@@ -142,6 +253,7 @@ export default function ChannelList() {
                 {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
+
             <div>
               <label className="text-xs text-muted uppercase tracking-wider block mb-2">Habitación</label>
               <select
@@ -151,26 +263,52 @@ export default function ChannelList() {
                 className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white disabled:opacity-40"
               >
                 <option value="">Seleccionar...</option>
-                {roomsByProperty.map((r) => <option key={r.id} value={r.id}>Hab. {r.roomNumber}</option>)}
+                {roomsByProperty.map((r) => (
+                  <option key={r.id} value={r.id}>Hab. {r.roomNumber}</option>
+                ))}
               </select>
             </div>
+
             <div>
-              <label className="text-xs text-muted uppercase tracking-wider block mb-2">URL iCal del OTA</label>
+              <label className="text-xs text-muted uppercase tracking-wider block mb-2">
+                URL iCal <span className="normal-case text-[10px] text-muted">(del OTA)</span>
+              </label>
               <input
                 type="url"
                 value={form.icalUrl}
                 onChange={(e) => setForm({ ...form, icalUrl: e.target.value })}
-                placeholder="https://..."
+                placeholder="https://booking.com/hotel/ical/..."
                 required
                 className="input-field w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm text-white placeholder-muted"
               />
             </div>
           </div>
+
+          <div className="bg-[#0369a10a] border border-[#0369a122] rounded-lg px-3 py-2.5 text-xs text-[#7dd3fc]">
+            <strong>¿Dónde encontrar la URL iCal?</strong><br />
+            Booking.com: Extranet → Calendario → Exportar calendario →{' '}
+            <span className="font-mono">ical.booking.com/...</span>
+          </div>
+
+          {formError && (
+            <p className="text-xs text-[#f87171] flex items-center gap-1.5">
+              <AlertCircle size={12} /> {formError}
+            </p>
+          )}
+
           <div className="flex gap-3">
-            <button type="submit" className="press bg-primary text-white text-sm px-4 py-2 rounded-lg">
-              Guardar
+            <button
+              type="submit"
+              disabled={!form.propertyId || !form.roomId || !form.icalUrl || submitting}
+              className="press bg-primary text-white text-sm px-4 py-2.5 rounded-lg font-medium disabled:opacity-40"
+            >
+              {submitting ? 'Guardando...' : 'Guardar conexión'}
             </button>
-            <button type="button" onClick={() => setShowForm(false)} className="press bg-surface border border-border text-[#ccc] text-sm px-4 py-2 rounded-lg">
+            <button
+              type="button"
+              onClick={() => { setShowForm(false); setFormError(''); }}
+              className="press bg-surface border border-border text-[#ccc] text-sm px-4 py-2.5 rounded-lg"
+            >
               Cancelar
             </button>
           </div>
