@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import { calcNights } from '@/lib/utils';
@@ -33,6 +33,12 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
   const [localRooms, setLocalRooms] = useState<Room[]>([]);
   const [localTypes, setLocalTypes] = useState<RoomType[]>([]);
 
+  /* Refs to latest value/onChange — prevents stale closures in effects */
+  const valueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { valueRef.current = value; });
+  useEffect(() => { onChangeRef.current = onChange; });
+
   const { data: properties = [] } = useSWR<Property[]>('/api/v1/properties', fetcher);
   const { data: fetchedRooms = [] } = useSWR<Room[]>(
     value.propertyId ? `/api/v1/rooms?propertyId=${value.propertyId}` : null,
@@ -47,38 +53,51 @@ export default function ReservationForm({ value, onChange, onSubmit, submitting 
     fetcher,
   );
 
-  /* ── Sync fetched rooms into local state (never in render phase) ── */
-  useEffect(() => {
-    if (fetchedRooms.length > 0) setLocalRooms(fetchedRooms);
-  }, [fetchedRooms]);
-
+  /* ── Sync rooms + types + pre-fill in a single reliable effect ── */
   useEffect(() => {
     if (fetchedTypes.length > 0) setLocalTypes(fetchedTypes);
   }, [fetchedTypes]);
 
-  /* ── Pre-fill first room when rooms arrive ── */
   useEffect(() => {
-    if (fetchedRooms.length > 0 && value.rooms[0]?.roomId === '') {
-      onChange({
-        ...value,
+    if (fetchedRooms.length === 0) return;
+    setLocalRooms(fetchedRooms);
+    // Pre-fill first room using latest value via ref (no stale closure)
+    if (valueRef.current.rooms[0]?.roomId === '') {
+      onChangeRef.current({
+        ...valueRef.current,
         rooms: [
-          { ...value.rooms[0], roomId: fetchedRooms[0].id },
-          ...value.rooms.slice(1),
+          { ...valueRef.current.rooms[0], roomId: fetchedRooms[0].id },
+          ...valueRef.current.rooms.slice(1),
         ],
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchedRooms]);
 
   /* ── Reset local data when property changes ── */
   function handlePropertyChange(propertyId: string) {
     setLocalRooms([]);
     setLocalTypes([]);
-    onChange({
+    const newValue = {
       ...value,
       propertyId,
       rooms: [{ id: `line-${Date.now()}`, roomId: '', adults: 1, children: 0 }],
-    });
+    };
+    onChange(newValue);
+    // If SWR already has cached rooms for this property, pre-fill immediately
+    // (effect won't fire if fetchedRooms reference didn't change)
+    if (fetchedRooms.length > 0) {
+      setTimeout(() => {
+        if (valueRef.current.rooms[0]?.roomId === '') {
+          onChangeRef.current({
+            ...valueRef.current,
+            rooms: [
+              { ...valueRef.current.rooms[0], roomId: fetchedRooms[0].id },
+              ...valueRef.current.rooms.slice(1),
+            ],
+          });
+        }
+      }, 0);
+    }
   }
 
   function set<K extends keyof ReservationFormData>(key: K, val: ReservationFormData[K]) {

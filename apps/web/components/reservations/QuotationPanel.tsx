@@ -292,7 +292,7 @@ function PriceSummary({
       <div className="pt-4">
         <button
           onClick={downloadAll}
-          disabled={!canDownload || downloading || !hasAnyPrice}
+          disabled={!canDownload || downloading}
           className="press w-full flex items-center justify-center gap-2 bg-surface border border-border text-[#ccc] py-2.5 rounded-lg text-sm font-medium disabled:opacity-40"
         >
           {downloading ? <Loader2 size={14} className="animate-spin" /> : <FileDown size={14} />}
