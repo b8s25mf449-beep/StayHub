@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#C41E1E" />
   <title>Papa Mala — Chips de malanga</title>
   <meta name="description" content="Snacks saludables de malanga, hechos en lotes pequeños. La papa que se porta mal, pero te quiere bien." />
 
@@ -63,7 +64,10 @@
 
     /* ── Botón flotante de WhatsApp ─────────────────────────────────────────── */
     .wa-float {
-      position: fixed; bottom: 24px; right: 24px; z-index: 9998;
+      position: fixed;
+      bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px));
+      right: max(24px, env(safe-area-inset-right));
+      z-index: 9998;
       display: flex; align-items: center; justify-content: center;
       width: 60px; height: 60px; border-radius: 50%;
       background: #25D366; color: #fff;
