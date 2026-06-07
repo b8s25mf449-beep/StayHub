@@ -11,7 +11,7 @@
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@600;700&family=Bebas+Neue&family=Oswald:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
 
   <!-- ── Tailwind CSS ───────────────────────────────────────────────────────── -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -96,7 +96,7 @@
 
   <!-- ── Botón flotante WhatsApp ────────────────────────────────────────────── -->
   <a id="wa-float-btn"
-     href="https://wa.me/529981234567?text=Hola%20Papa%20Mala%20%F0%9F%91%8B%20Me%20interesa%20saber%20m%C3%A1s%20sobre%20sus%20productos"
+     href="https://wa.me/529871752310?text=Hola%20Papa%20Mala%20%F0%9F%91%8B%20Me%20interesa%20saber%20m%C3%A1s%20sobre%20sus%20productos"
      target="_blank" rel="noopener noreferrer"
      class="wa-float" aria-label="Escríbenos por WhatsApp">
     <svg viewBox="0 0 24 24" fill="currentColor">
@@ -107,10 +107,18 @@
   <!-- ════════════════════════════════════════════════════════════════════════
        DEPENDENCIAS (orden obligatorio)
        ════════════════════════════════════════════════════════════════════════ -->
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.js"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"
+          crossorigin="anonymous"
+          integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"
+          crossorigin="anonymous"
+          integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"
+          crossorigin="anonymous"
+          integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"></script>
+  <script src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.js"
+          crossorigin="anonymous"
+          integrity="sha384-LbE7QjuKrfj+tfbJFtZUSlf+kL3z8bJeKfT3daZFPfgipMms5XiZhnAk6iXnWm+d"></script>
 
   <!-- ════════════════════════════════════════════════════════════════════════
        CONFIGURACIÓN — edita estos archivos para personalizar la app
@@ -129,8 +137,7 @@
        HOOKS
        ════════════════════════════════════════════════════════════════════════ -->
   <script type="text/babel" src="src/hooks/useMagnetic.jsx"></script>
-  <script type="text/babel" src="src/hooks/useTweaks.jsx"></script>
-  <script type="text/babel" src="src/hooks/useCart.jsx"></script>
+<script type="text/babel" src="src/hooks/useCart.jsx"></script>
 
   <!-- ════════════════════════════════════════════════════════════════════════
        COMPONENTES UI — primitivos reutilizables
@@ -143,9 +150,8 @@
   <script type="text/babel" src="src/ui/GhostButton.jsx"></script>
 
   <!-- ════════════════════════════════════════════════════════════════════════
-       COMPONENTES — secciones de la página (y panel de tweaks)
+       COMPONENTES — secciones de la página
        ════════════════════════════════════════════════════════════════════════ -->
-  <script type="text/babel" src="src/components/TweaksPanel.jsx"></script>
   <script type="text/babel" src="src/components/Nav.jsx"></script>
   <script type="text/babel" src="src/components/Hero.jsx"></script>
   <script type="text/babel" src="src/components/Marquee.jsx"></script>
