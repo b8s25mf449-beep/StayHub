@@ -36,7 +36,7 @@ export default function TodayActivity() {
     for (const r of [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
       if (!seen.has(r.roomId)) seen.set(r.roomId, r);
     }
-    return [...seen.values()];
+    return Array.from(seen.values());
   }
 
   const arrivals = dedupByRoomId(

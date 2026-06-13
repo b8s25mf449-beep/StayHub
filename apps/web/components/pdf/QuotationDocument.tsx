@@ -303,6 +303,7 @@ export function QuotationDocument(props: QuotationData) {
         <View style={styles.footer}>
           <View style={styles.divider} />
           {props.logoBase64 ? (
+            // eslint-disable-next-line jsx-a11y/alt-text
             <Image src={props.logoBase64} style={styles.footerLogoImg} />
           ) : (
             <Text style={styles.footerLogoText}>{props.tenantName.toUpperCase()}</Text>

@@ -188,6 +188,7 @@ export function ConfirmationDocument(props: ConfirmationData) {
         {/* HEADER */}
         <View style={styles.header}>
           {props.logoBase64 ? (
+            // eslint-disable-next-line jsx-a11y/alt-text
             <Image src={props.logoBase64} style={styles.logoImg} />
           ) : (
             <Text style={{ ...styles.confirmTitle, fontSize: 16, color: '#ffffff', letterSpacing: 8, marginBottom: 12 }}>
@@ -310,6 +311,7 @@ export function ConfirmationDocument(props: ConfirmationData) {
         <View style={styles.footer}>
           <View style={styles.divider} />
           {props.logoBase64 ? (
+            // eslint-disable-next-line jsx-a11y/alt-text
             <Image src={props.logoBase64} style={styles.footerLogoImg} />
           ) : (
             <Text style={styles.footerLogoText}>{props.tenantName.toUpperCase()}</Text>

@@ -200,8 +200,9 @@ export default function PmsCalendar() {
           roomId:       current.currentRoomId,
         });
         setDragError(null);
-      } catch (err: any) {
-        setDragError(err?.response?.data?.message ?? 'Conflicto de fechas — reserva revertida');
+      } catch (err: unknown) {
+        const e = err as { response?: { data?: { message?: string } } };
+        setDragError(e?.response?.data?.message ?? 'Conflicto de fechas — reserva revertida');
       } finally {
         setSaving(false);
         swrMutate('/api/v1/reservations');

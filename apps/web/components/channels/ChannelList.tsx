@@ -91,7 +91,7 @@ export default function ChannelList() {
 
   function startEdit(c: ChannelConnection) {
     setEditingId(c.id);
-    setEditUrl((c as any).icalUrl ?? '');
+    setEditUrl((c as { icalUrl?: string }).icalUrl ?? '');
   }
 
   async function handleSaveEdit(id: string) {
