@@ -37,7 +37,7 @@ export default registerAs(
       Role,
       User,
     ],
-    migrations: [__dirname + '/../database/migrations/*{.ts,.js}'],
+    migrations: [],
     synchronize: false,
     logging: process.env.NODE_ENV === 'development',
     extra: {
