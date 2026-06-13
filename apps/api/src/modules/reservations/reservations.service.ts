@@ -23,8 +23,8 @@ export class ReservationsService {
       .where('r.room_id = :roomId', { roomId })
       .andWhere('r.tenant_id = :tenantId', { tenantId })
       .andWhere('r.deleted_at IS NULL')
-      .andWhere('r.status NOT IN (:...cancelled)', {
-        cancelled: [ReservationStatus.CANCELLED, ReservationStatus.NO_SHOW],
+      .andWhere('r.status NOT IN (:...terminal)', {
+        terminal: [ReservationStatus.CANCELLED, ReservationStatus.NO_SHOW, ReservationStatus.CHECKED_OUT],
       })
       .andWhere('r.check_in_date < :checkOut', { checkOut: checkOutDate })
       .andWhere('r.check_out_date > :checkIn', { checkIn: checkInDate });
@@ -78,11 +78,11 @@ export class ReservationsService {
   async update(tenantId: string, id: string, dto: UpdateReservationDto): Promise<Reservation> {
     const reservation = await this.findOne(tenantId, id);
 
-    if ((dto.checkInDate || dto.checkOutDate) && reservation.status !== ReservationStatus.CANCELLED) {
+    if ((dto.checkInDate || dto.checkOutDate || dto.roomId) && reservation.status !== ReservationStatus.CANCELLED) {
       await this.checkAvailability(
         tenantId,
-        reservation.roomId,
-        dto.checkInDate ?? reservation.checkInDate,
+        dto.roomId ?? reservation.roomId,
+        dto.checkInDate  ?? reservation.checkInDate,
         dto.checkOutDate ?? reservation.checkOutDate,
         id,
       );

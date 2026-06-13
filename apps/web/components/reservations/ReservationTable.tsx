@@ -47,33 +47,36 @@ export default function ReservationTable() {
   return (
     <div>
       <div className="flex items-center gap-2 mb-4 flex-wrap animate-fade-up delay-0">
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`press px-3 py-1.5 rounded-md text-xs font-medium border ${
-              filter === f.key
-                ? 'bg-[#0f766e22] text-primary border-[#0f766e44]'
-                : 'bg-surface text-muted border-border hover:text-[#ccc]'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`press px-3 py-1.5 rounded-md text-xs font-medium border whitespace-nowrap ${
+                filter === f.key
+                  ? 'bg-[#0f766e22] text-primary border-[#0f766e44]'
+                  : 'bg-surface text-muted border-border hover:text-[#ccc]'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar huésped o #..."
-          className="input-field ml-auto bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-[#ccc] placeholder-muted w-48"
+          className="input-field ml-auto bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-[#ccc] placeholder-muted w-40 min-w-0"
         />
       </div>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[620px]">
           <thead>
             <tr className="bg-surface">
-              {['Confirmación', 'Huésped', 'Habitación', 'Check-in', 'Check-out', 'Estado', 'Total'].map((h) => (
-                <th key={h} className="text-left text-xs text-muted uppercase tracking-wider px-4 py-3 font-medium">
+              {['Confirmación', 'Huésped', 'Hab.', 'Check-in', 'Check-out', 'Estado', 'Total'].map((h) => (
+                <th key={h} className="text-left text-xs text-muted uppercase tracking-wider px-4 py-3 font-medium whitespace-nowrap">
                   {h}
                 </th>
               ))}
@@ -101,26 +104,27 @@ export default function ReservationTable() {
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#0f1520')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
                 >
-                  <td className="px-4 py-3 font-mono text-xs text-muted">{r.confirmationNumber}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted whitespace-nowrap">{r.confirmationNumber}</td>
                   <td className="px-4 py-3 text-white text-sm">
                     {g ? `${g.firstName} ${g.lastName}` : '—'}
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted">{room?.roomNumber ?? '—'}</td>
-                  <td className="px-4 py-3 text-[#ccc] text-sm">{formatDate(r.checkInDate)}</td>
-                  <td className="px-4 py-3 text-[#ccc] text-sm">{formatDate(r.checkOutDate)}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 font-mono text-xs text-muted whitespace-nowrap">{room?.roomNumber ?? '—'}</td>
+                  <td className="px-4 py-3 text-[#ccc] text-sm whitespace-nowrap">{formatDate(r.checkInDate)}</td>
+                  <td className="px-4 py-3 text-[#ccc] text-sm whitespace-nowrap">{formatDate(r.checkOutDate)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[r.status]}`}>
                       {STATUS_LABELS[r.status]}
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-mono text-sm text-white">
-                    {formatPrice(Number(r.baseAmount))}
+                  <td className="px-4 py-3 font-mono text-sm text-white whitespace-nowrap">
+                    {formatPrice(Number(r.totalAmount || r.baseAmount))}
                   </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

@@ -5,16 +5,17 @@ import { formatPrice } from '@/lib/utils';
 import type { Room, RoomType } from '@/types';
 
 export interface RoomLine {
-  id: string;     // local key for list rendering
-  roomId: string; // physical room ID
+  id: string;
+  roomId: string;
   adults: number;
   children: number;
+  customPrice?: number; // total override (set from QuotationPanel)
 }
 
 interface Props {
   rooms: RoomLine[];
-  availableRooms: Room[];   // physical rooms for the selected property
-  roomTypes: RoomType[];    // for name + price lookup
+  availableRooms: Room[];
+  roomTypes: RoomType[];
   nights: number;
   onChange: (rooms: RoomLine[]) => void;
 }
@@ -56,12 +57,10 @@ function Counter({
 export default function RoomSelectionManager({
   rooms, availableRooms, roomTypes, nights, onChange,
 }: Props) {
-  // IDs already chosen in OTHER lines (to disable them in each dropdown)
   const usedRoomIds = new Set(rooms.map((r) => r.roomId));
 
   function addRoom() {
     if (rooms.length >= MAX_ROOMS) return;
-    // Pick first room not already selected
     const next = availableRooms.find((r) => !usedRoomIds.has(r.id));
     onChange([
       ...rooms,
@@ -88,12 +87,11 @@ export default function RoomSelectionManager({
     return Number(getRoomType(physical)?.basePrice ?? 0);
   }
 
-  const totalAdults = rooms.reduce((s, r) => s + r.adults, 0);
+  const totalAdults   = rooms.reduce((s, r) => s + r.adults, 0);
   const totalChildren = rooms.reduce((s, r) => s + r.children, 0);
-  const grandTotal = rooms.reduce((s, r) => s + getPricePerNight(r.roomId) * nights, 0);
-
-  const noRoomsLeft = availableRooms.length === 0;
-  const allRoomsUsed = usedRoomIds.size >= availableRooms.length;
+  const grandTotal    = rooms.reduce((s, r) => s + (r.customPrice ?? getPricePerNight(r.roomId) * nights), 0);
+  const noRoomsLeft   = availableRooms.length === 0;
+  const allRoomsUsed  = usedRoomIds.size >= availableRooms.length;
 
   return (
     <div className="space-y-3">
@@ -122,12 +120,9 @@ export default function RoomSelectionManager({
         </p>
       )}
 
-      {/* Room lines */}
       {rooms.map((line, idx) => {
-        const physical = availableRooms.find((r) => r.id === line.roomId);
-        const rt = physical ? getRoomType(physical) : undefined;
-        const pricePerNight = getPricePerNight(line.roomId);
-        const roomSubtotal = pricePerNight * nights;
+        const physical    = availableRooms.find((r) => r.id === line.roomId);
+        const rt          = physical ? getRoomType(physical) : undefined;
 
         return (
           <div
@@ -135,7 +130,6 @@ export default function RoomSelectionManager({
             className="bg-bg border border-border rounded-xl p-4 animate-fade-up"
             style={{ animationDelay: `${idx * 40}ms` }}
           >
-            {/* Card header */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 rounded bg-[#0f766e22] flex items-center justify-center">
@@ -160,12 +154,9 @@ export default function RoomSelectionManager({
               </button>
             </div>
 
-            {/* Room selector + counters */}
             <div className="flex items-end gap-4 flex-wrap">
               <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-                <label className="text-[10px] text-muted uppercase tracking-wider">
-                  Habitación
-                </label>
+                <label className="text-[10px] text-muted uppercase tracking-wider">Habitación</label>
                 <select
                   value={line.roomId}
                   onChange={(e) => updateRoom(line.id, { roomId: e.target.value })}
@@ -186,39 +177,13 @@ export default function RoomSelectionManager({
                   })}
                 </select>
               </div>
-
-              <Counter
-                label="Adultos"
-                value={line.adults}
-                min={1}
-                max={10}
-                onChange={(n) => updateRoom(line.id, { adults: n })}
-              />
-              <Counter
-                label="Niños"
-                value={line.children}
-                min={0}
-                max={10}
-                onChange={(n) => updateRoom(line.id, { children: n })}
-              />
+              <Counter label="Adultos"  value={line.adults}   min={1} max={10} onChange={(n) => updateRoom(line.id, { adults: n })} />
+              <Counter label="Niños"    value={line.children} min={0} max={10} onChange={(n) => updateRoom(line.id, { children: n })} />
             </div>
-
-            {/* Price preview */}
-            {nights > 0 && pricePerNight > 0 && (
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                <span className="text-xs text-muted">
-                  {formatPrice(pricePerNight)}/noche × {nights}
-                </span>
-                <span className="text-xs font-mono font-medium text-white">
-                  {formatPrice(roomSubtotal)}
-                </span>
-              </div>
-            )}
           </div>
         );
       })}
 
-      {/* Add room button */}
       <button
         type="button"
         onClick={addRoom}

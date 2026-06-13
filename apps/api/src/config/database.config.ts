@@ -12,8 +12,9 @@ export default registerAs(
     synchronize: false,
     logging: process.env.NODE_ENV === 'development',
     extra: {
-      max: 10,
+      max: process.env.VERCEL ? 1 : 10,
       idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
     },
   }),
 );

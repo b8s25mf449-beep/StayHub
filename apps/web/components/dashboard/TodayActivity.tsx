@@ -28,17 +28,34 @@ export default function TodayActivity() {
   const roomMap  = Object.fromEntries(rooms.map((r) => [r.id, r]));
   const today    = todayISO();
 
-  const arrivals   = reservations.filter(
-    (r) => r.checkInDate === today && ['pending', 'confirmed'].includes(r.status),
-  ).sort((a, b) => a.checkInDate.localeCompare(b.checkInDate));
+  // One room = one entry per section. A room can't have two arrivals, two
+  // current occupants, or two departures on the same day. Dedup by roomId,
+  // keeping the most recently created record (newest sync = most accurate data).
+  function dedupByRoomId(list: Reservation[]): Reservation[] {
+    const seen = new Map<string, Reservation>();
+    for (const r of [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
+      if (!seen.has(r.roomId)) seen.set(r.roomId, r);
+    }
+    return [...seen.values()];
+  }
 
-  const inHouse    = reservations.filter(
-    (r) => r.status === 'checked_in' && r.checkOutDate > today,
+  const arrivals = dedupByRoomId(
+    reservations.filter(
+      (r) => r.checkInDate === today && ['pending', 'confirmed'].includes(r.status),
+    ),
+  ).sort((a, b) => (roomMap[a.roomId]?.roomNumber ?? '').localeCompare(roomMap[b.roomId]?.roomNumber ?? '', undefined, { numeric: true }));
+
+  const inHouse = dedupByRoomId(
+    reservations.filter(
+      (r) => r.status === 'checked_in' && r.checkOutDate > today,
+    ),
   ).sort((a, b) => a.checkOutDate.localeCompare(b.checkOutDate));
 
-  const departures = reservations.filter(
-    (r) => r.status === 'checked_in' && r.checkOutDate === today,
-  ).sort((a, b) => a.confirmationNumber.localeCompare(b.confirmationNumber));
+  const departures = dedupByRoomId(
+    reservations.filter(
+      (r) => r.status === 'checked_in' && r.checkOutDate === today,
+    ),
+  ).sort((a, b) => (roomMap[a.roomId]?.roomNumber ?? '').localeCompare(roomMap[b.roomId]?.roomNumber ?? '', undefined, { numeric: true }));
 
   const groups: Group[] = [
     {
@@ -113,7 +130,8 @@ export default function TodayActivity() {
               </div>
 
               {/* Rows */}
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-4 px-4">
+              <table className="w-full min-w-[520px] text-sm">
                 <tbody>
                   {group.rows.map((r) => {
                     const g    = guestMap[r.guestId];
@@ -122,7 +140,7 @@ export default function TodayActivity() {
 
                     return (
                       <tr key={r.id} className="group border-t border-border">
-                        <td className="py-2 pr-3">
+                        <td className="py-2 pr-3 whitespace-nowrap">
                           <Link
                             href={`/reservations/${r.id}`}
                             className="font-mono text-xs text-muted hover:text-primary transition-colors"
@@ -133,13 +151,13 @@ export default function TodayActivity() {
                         <td className="py-2 pr-3 text-white font-medium">
                           {g ? `${g.firstName} ${g.lastName}` : '—'}
                         </td>
-                        <td className="py-2 pr-3 font-mono text-xs text-muted">
+                        <td className="py-2 pr-3 font-mono text-xs text-muted whitespace-nowrap">
                           Hab. {room?.roomNumber ?? '—'}
                         </td>
-                        <td className="py-2 pr-3 font-mono text-sm text-white">
+                        <td className="py-2 pr-3 font-mono text-sm text-white whitespace-nowrap">
                           {formatPrice(Number(r.totalAmount || r.baseAmount))}
                         </td>
-                        <td className="py-2">
+                        <td className="py-2 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 justify-end">
                             {group.action && (
                               <button
@@ -164,6 +182,7 @@ export default function TodayActivity() {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           );
         })}

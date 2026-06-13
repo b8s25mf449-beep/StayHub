@@ -63,13 +63,19 @@ export default function NewReservationPage() {
 
       for (const line of validRooms) {
         let baseAmount = 0;
-        try {
-          const priceRes = await api.get<{ baseAmount: number; currency: string }>(
-            `/api/v1/rates/room/${line.roomId}/calculate?checkIn=${formData.checkInDate}&checkOut=${formData.checkOutDate}`,
-          );
-          baseAmount = priceRes.data.baseAmount;
-        } catch {
-          // pricing engine failure — server will calculate
+
+        if (line.customPrice != null && line.customPrice > 0) {
+          // Staff-entered override takes priority — skip the pricing engine
+          baseAmount = line.customPrice;
+        } else {
+          try {
+            const priceRes = await api.get<{ baseAmount: number; currency: string }>(
+              `/api/v1/rates/room/${line.roomId}/calculate?checkIn=${formData.checkInDate}&checkOut=${formData.checkOutDate}`,
+            );
+            baseAmount = priceRes.data.baseAmount;
+          } catch {
+            // pricing engine failure — server will calculate
+          }
         }
 
         const taxesAmount = formData.requiresInvoice ? baseAmount * TAX_RATE : 0;
@@ -128,6 +134,7 @@ export default function NewReservationPage() {
             tenantName={tenant?.name ?? 'Hotel'}
             tenantPhone={tenant?.phone ?? ''}
             tenantAddress=""
+            onRoomsChange={(rooms) => setFormData((d) => ({ ...d, rooms }))}
           />
         </div>
       </div>

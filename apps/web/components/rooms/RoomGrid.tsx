@@ -63,7 +63,7 @@ export default function RoomGrid() {
       )}
 
       {/* Grid */}
-      <div className="grid grid-cols-8 gap-2">
+      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 xl:grid-cols-10 gap-2">
         {rooms.map((room, i) => {
           const rt = typeMap[room.roomTypeId];
           const isDeleting = deleting === room.id;

@@ -9,15 +9,16 @@ export default function RoomsPage() {
   const [showNewRoom, setShowNewRoom] = useState(false);
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6 animate-fade-up delay-0">
-        <h2 className="text-lg font-semibold">Habitaciones</h2>
+    <div className="p-4 md:p-6">
+      <div className="flex items-center justify-between mb-6 gap-3 animate-fade-up delay-0">
+        <h2 className="text-lg font-semibold shrink-0">Habitaciones</h2>
         <button
           onClick={() => setShowNewRoom(true)}
-          className="press flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium"
+          className="press flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap"
         >
           <Plus size={14} />
-          Nueva habitación
+          <span className="hidden sm:inline">Nueva habitación</span>
+          <span className="sm:hidden">Nueva</span>
         </button>
       </div>
 

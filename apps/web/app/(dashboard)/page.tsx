@@ -5,15 +5,13 @@ import TodayActivity from '@/components/dashboard/TodayActivity';
 
 export default function DashboardPage() {
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <div className="flex items-center justify-between mb-6 animate-fade-up delay-0">
         <h2 className="text-lg font-semibold">Dashboard</h2>
       </div>
       <StatsGrid />
-      <div className="grid grid-cols-3 gap-3.5 mb-3.5">
-        <div className="col-span-2">
-          <RevenueChart />
-        </div>
+      <div className="mb-3.5">
+        <RevenueChart />
       </div>
       <TodayActivity />
       <RecentReservations />

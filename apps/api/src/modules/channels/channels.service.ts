@@ -64,4 +64,23 @@ export class ChannelConnectionsService {
     const connection = await this.findOne(tenantId, id);
     return this.icalImportService.importFromConnection(connection);
   }
+
+  async syncAll(tenantId: string): Promise<Record<string, SyncResult | { error: string }>> {
+    const connections = await this.repo.find({
+      where: { tenantId, deletedAt: IsNull() },
+    });
+
+    const results = await Promise.allSettled(
+      connections.map((c) => this.icalImportService.importFromConnection(c)),
+    );
+
+    const out: Record<string, SyncResult | { error: string }> = {};
+    connections.forEach((c, i) => {
+      const r = results[i];
+      out[c.id] = r.status === 'fulfilled'
+        ? r.value
+        : { error: (r.reason as Error)?.message ?? 'Unknown error' };
+    });
+    return out;
+  }
 }

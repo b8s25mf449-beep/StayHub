@@ -5,7 +5,7 @@ import useSWR, { mutate } from 'swr';
 import { RefreshCw, Plus, AlertCircle, CheckCircle2, X, Pencil, Check } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
-import { CHANNEL_LABELS, formatDate } from '@/lib/utils';
+import { CHANNEL_LABELS } from '@/lib/utils';
 import type { ChannelConnection, Room, Property, SyncResult } from '@/types';
 
 const CHANNEL_OPTIONS = ['booking_com', 'airbnb', 'expedia', 'ical', 'vrbo'] as const;
@@ -38,6 +38,7 @@ export default function ChannelList() {
   const { data: properties = [] } = useSWR<Property[]>('/api/v1/properties', fetcher);
 
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [syncingAll, setSyncingAll] = useState(false);
   const [feedback, setFeedback] = useState<SyncFeedback | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -105,6 +106,17 @@ export default function ChannelList() {
     }
   }
 
+  async function handleSyncAll() {
+    setSyncingAll(true);
+    setFeedback(null);
+    try {
+      await api.post('/api/v1/channels/sync-all');
+      mutate('/api/v1/channels');
+    } finally {
+      setSyncingAll(false);
+    }
+  }
+
   async function handleDelete(id: string) {
     if (!confirm('¿Eliminar esta conexión?')) return;
     await api.delete(`/api/v1/channels/${id}`);
@@ -147,11 +159,27 @@ export default function ChannelList() {
 
       {/* Connections table */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <table className="w-full">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-surface border-b border-border min-w-0">
+          <span className="text-xs text-muted uppercase tracking-wider font-medium">
+            {connections.length} conexiones
+          </span>
+          {connections.length > 0 && (
+            <button
+              onClick={handleSyncAll}
+              disabled={syncingAll || !!syncing}
+              className="press flex items-center gap-1.5 text-xs text-muted hover:text-white disabled:opacity-40 transition-colors"
+            >
+              <RefreshCw size={11} className={syncingAll ? 'animate-spin' : ''} />
+              {syncingAll ? 'Sincronizando...' : 'Sync all'}
+            </button>
+          )}
+        </div>
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px]">
           <thead>
-            <tr className="bg-surface">
+            <tr className="bg-surface border-b border-border">
               {['Canal', 'Habitación', 'Estado', 'Último sync', 'Importadas', ''].map((h) => (
-                <th key={h} className="text-left text-xs text-muted uppercase tracking-wider px-4 py-3 font-medium">
+                <th key={h} className="text-left text-xs text-muted uppercase tracking-wider px-4 py-3 font-medium whitespace-nowrap">
                   {h}
                 </th>
               ))}
@@ -193,10 +221,12 @@ export default function ChannelList() {
                           </p>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted">
-                        {c.lastSyncAt ? formatDate(c.lastSyncAt.split('T')[0]) : '—'}
+                      <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                        {c.lastSyncAt
+                          ? new Date(c.lastSyncAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
+                          : '—'}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted">
+                      <td className="px-4 py-3 font-mono text-xs text-muted whitespace-nowrap">
                         {c.lastSyncCount ?? 0}
                       </td>
                       <td className="px-4 py-3">
@@ -263,6 +293,7 @@ export default function ChannelList() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Add connection form */}

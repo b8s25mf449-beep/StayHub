@@ -56,6 +56,12 @@ export class ChannelsController {
     return this.service.remove(user.tenantId, id);
   }
 
+  @Post('sync-all')
+  @ApiOperation({ summary: 'Sync all channel connections for this tenant in parallel' })
+  syncAll(@CurrentUser() user: JwtPayload) {
+    return this.service.syncAll(user.tenantId);
+  }
+
   @Post(':id/sync')
   @ApiOperation({ summary: 'Trigger manual iCal import — creates/updates reservations from OTA feed' })
   sync(@CurrentUser() user: JwtPayload, @Param('id') id: string) {

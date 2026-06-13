@@ -16,9 +16,13 @@ export default function StatsGrid() {
   const occupiedRooms = rooms.filter((r) => r.status === 'occupied').length;
   const occupancyPct = totalRooms ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
 
-  const checkInsToday = reservations.filter(
-    (r) => r.checkInDate === today && r.status === 'confirmed'
-  ).length;
+  // Dedup by roomId: a room can only have one arrival per day
+  const checkInRooms = new Set(
+    reservations
+      .filter((r) => r.checkInDate === today && ['pending', 'confirmed'].includes(r.status))
+      .map((r) => r.roomId)
+  );
+  const checkInsToday = checkInRooms.size;
 
   const pendingCount = reservations.filter((r) => r.status === 'pending').length;
 
@@ -56,22 +60,22 @@ export default function StatsGrid() {
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-3.5 mb-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
       {stats.map((s, i) => (
         <div
           key={s.label}
-          className={`rounded-xl p-4 border animate-fade-up ${
+          className={`rounded-xl p-4 border overflow-hidden animate-fade-up ${
             s.highlight
               ? 'bg-[#0f766e08] border-[#0f766e44]'
               : 'bg-card border-border'
           }`}
           style={{ animationDelay: `${i * 50}ms` }}
         >
-          <p className="text-xs text-muted uppercase tracking-wider mb-2">{s.label}</p>
-          <p className={`text-2xl font-bold font-mono ${s.highlight ? 'text-primary-light' : 'text-white'}`}>
+          <p className="text-[10px] text-muted uppercase tracking-wider mb-2 leading-tight">{s.label}</p>
+          <p className={`text-xl font-bold font-mono leading-none truncate ${s.highlight ? 'text-primary-light' : 'text-white'}`}>
             {s.value}
           </p>
-          <p className="text-xs text-muted mt-1">{s.sub}</p>
+          <p className="text-xs text-muted mt-1.5 truncate">{s.sub}</p>
         </div>
       ))}
     </div>

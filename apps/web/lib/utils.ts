@@ -1,14 +1,15 @@
-export function formatPrice(amount: number, currency = 'ARS'): string {
-  return new Intl.NumberFormat('es-AR', {
+export function formatPrice(amount: number, currency = 'MXN'): string {
+  return new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency,
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amount);
 }
 
 export function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString('es-AR', {
+  return new Date(year, month - 1, day).toLocaleDateString('es-MX', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -21,7 +22,7 @@ export function formatDateRange(checkIn: string, checkOut: string): string {
   const start = new Date(y1, m1 - 1, d1);
   const end = new Date(y2, m2 - 1, d2);
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
-  return `${start.toLocaleDateString('es-AR', opts)} - ${end.toLocaleDateString('es-AR', { ...opts, year: 'numeric' })}`;
+  return `${start.toLocaleDateString('es-MX', opts)} - ${end.toLocaleDateString('es-MX', { ...opts, year: 'numeric' })}`;
 }
 
 export function calcNights(checkIn: string, checkOut: string): number {
@@ -37,7 +38,8 @@ export function calcNights(checkIn: string, checkOut: string): number {
 }
 
 export function todayISO(): string {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 // Accepts any type — non-string values (e.g. base-ui render-prop classNames) are silently ignored

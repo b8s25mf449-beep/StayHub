@@ -20,11 +20,12 @@ export default function RecentReservations() {
   return (
     <div className="bg-card border border-border rounded-xl p-4 animate-fade-up delay-150">
       <h3 className="text-xs text-muted uppercase tracking-wider mb-3">Últimas reservas</h3>
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto -mx-4 px-4">
+      <table className="w-full min-w-[540px] text-sm">
         <thead>
           <tr>
             {['#', 'Huésped', 'Hab.', 'Check-in', 'Estado', 'Total'].map((h) => (
-              <th key={h} className="text-left text-xs text-muted uppercase tracking-wider pb-2 font-medium">
+              <th key={h} className="text-left text-xs text-muted uppercase tracking-wider pb-2 font-medium whitespace-nowrap">
                 {h}
               </th>
             ))}
@@ -45,25 +46,26 @@ export default function RecentReservations() {
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#0f1520')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
               >
-                <td className="py-2.5 pr-3 font-mono text-xs text-muted">{r.confirmationNumber}</td>
+                <td className="py-2.5 pr-3 font-mono text-xs text-muted whitespace-nowrap">{r.confirmationNumber}</td>
                 <td className="py-2.5 pr-3 text-white">
                   {g ? `${g.firstName} ${g.lastName}` : '—'}
                 </td>
-                <td className="py-2.5 pr-3 font-mono text-xs text-muted">{room?.roomNumber ?? '—'}</td>
-                <td className="py-2.5 pr-3 text-[#ccc]">{formatDate(r.checkInDate)}</td>
-                <td className="py-2.5 pr-3">
+                <td className="py-2.5 pr-3 font-mono text-xs text-muted whitespace-nowrap">{room?.roomNumber ?? '—'}</td>
+                <td className="py-2.5 pr-3 text-[#ccc] whitespace-nowrap">{formatDate(r.checkInDate)}</td>
+                <td className="py-2.5 pr-3 whitespace-nowrap">
                   <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[r.status]}`}>
                     {STATUS_LABELS[r.status]}
                   </span>
                 </td>
-                <td className="py-2.5 font-mono text-sm text-white">
-                  {formatPrice(Number(r.baseAmount))}
+                <td className="py-2.5 font-mono text-sm text-white whitespace-nowrap">
+                  {formatPrice(Number(r.totalAmount || r.baseAmount))}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

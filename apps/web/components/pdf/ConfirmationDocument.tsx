@@ -11,28 +11,45 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
   },
-  hotelName: {
+  logoImg: {
+    width: 130,
+    height: 130,
+    objectFit: 'contain',
+    marginBottom: 6,
+  },
+  confirmTitle: {
     fontSize: 9,
     color: '#888888',
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  cotizacionTitle: {
-    fontSize: 26,
-    fontFamily: 'Helvetica-Bold',
     letterSpacing: 4,
     textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  badge: {
+    backgroundColor: '#0f766e',
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  badgeText: {
+    fontSize: 9,
     color: '#ffffff',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    fontFamily: 'Helvetica-Bold',
+  },
+  divider: {
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+    marginVertical: 14,
   },
   infoBlock: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  infoLeft: { flex: 1 },
+  infoLeft:  { flex: 1 },
   infoRight: { flex: 1, alignItems: 'flex-end' },
   infoRow: {
     fontSize: 9,
@@ -41,32 +58,22 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
-  infoLabel: {
-    color: '#888888',
-  },
-  divider: {
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255,255,255,0.25)',
-    marginVertical: 12,
-  },
+  infoLabel: { color: '#888888' },
   sectionTitle: {
     textAlign: 'center',
     fontSize: 9,
     color: '#ffffff',
     letterSpacing: 3,
     textTransform: 'uppercase',
-    marginVertical: 12,
+    marginVertical: 10,
   },
-  tableHeader: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  colRoom: { flex: 2 },
+  tableHeader: { flexDirection: 'row', marginBottom: 8 },
+  colRoom:  { flex: 2 },
   colNight: { flex: 1, alignItems: 'center' },
   colTotal: { flex: 1, alignItems: 'flex-end' },
   tableHeaderText: {
     fontSize: 8,
-    color: '#666666',
+    color: '#555555',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -83,28 +90,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 10,
   },
-  roomNameText: {
-    fontSize: 11,
-    color: '#ffffff',
-    textTransform: 'uppercase',
-  },
-  priceNightText: {
-    fontSize: 11,
-    color: '#ffffff',
-    textAlign: 'center',
-  },
+  roomNameText:  { fontSize: 11, color: '#ffffff', textTransform: 'uppercase' },
+  amenityText:   { fontSize: 9, color: '#888888', textTransform: 'uppercase', letterSpacing: 0.8, marginTop: 4 },
+  priceNightText: { fontSize: 11, color: '#ffffff', textAlign: 'center' },
   priceTotalText: {
     fontSize: 14,
     fontFamily: 'Helvetica-Bold',
     color: '#e8a94a',
     textAlign: 'right',
-  },
-  amenityText: {
-    fontSize: 9,
-    color: '#888888',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: 4,
   },
   totalRow: {
     flexDirection: 'row',
@@ -112,17 +105,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  totalLabel: {
-    fontSize: 9,
-    color: '#888888',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  totalLabel: { fontSize: 9, color: '#888888', textTransform: 'uppercase', letterSpacing: 1 },
+  totalValue: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: '#e8a94a' },
+  notesBox: {
+    marginTop: 16,
+    padding: 12,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 4,
   },
-  totalValue: {
-    fontSize: 16,
-    fontFamily: 'Helvetica-Bold',
-    color: '#e8a94a',
-  },
+  notesLabel: { fontSize: 8, color: '#666666', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+  notesText:  { fontSize: 9, color: '#aaaaaa', lineHeight: 1.5 },
   footer: {
     position: 'absolute',
     bottom: 32,
@@ -137,22 +130,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   footerLogoText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#ffffff',
-    letterSpacing: 10,
+    letterSpacing: 8,
     fontFamily: 'Helvetica',
-    marginBottom: 8,
+    marginBottom: 6,
     textTransform: 'uppercase',
   },
-  footerContact: {
-    fontSize: 8,
-    color: '#888888',
-    marginTop: 3,
-    letterSpacing: 0.5,
-  },
+  footerContact: { fontSize: 8, color: '#555555', marginTop: 3, letterSpacing: 0.5 },
 });
 
-export interface QuotationRoom {
+export interface ConfirmationRoom {
   roomName: string;
   adults: number;
   children: number;
@@ -160,7 +148,7 @@ export interface QuotationRoom {
   subtotal: number;
 }
 
-export interface QuotationData {
+export interface ConfirmationData {
   tenantName: string;
   tenantPhone: string;
   tenantAddress: string;
@@ -169,11 +157,13 @@ export interface QuotationData {
   checkInDate: string;
   checkOutDate: string;
   nights: number;
-  rooms: QuotationRoom[];
+  rooms: ConfirmationRoom[];
   grandSubtotal: number;
   requiresInvoice: boolean;
   iva: number;
   totalWithTax: number;
+  notes?: string;
+  confirmationNumber?: string;
 }
 
 function fmt(amount: number): string {
@@ -184,14 +174,12 @@ function fmtDateRange(checkIn: string, checkOut: string): string {
   const [y1, m1, d1] = checkIn.split('-').map(Number);
   const [y2, m2, d2] = checkOut.split('-').map(Number);
   const months = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-  if (m1 === m2 && y1 === y2) {
-    return `${d1} - ${d2} ${months[m1 - 1]} ${y1}`;
-  }
+  if (m1 === m2 && y1 === y2) return `${d1} - ${d2} ${months[m1 - 1]} ${y1}`;
   return `${d1} ${months[m1 - 1]} - ${d2} ${months[m2 - 1]} ${y1}`;
 }
 
-export function QuotationDocument(props: QuotationData) {
-  const totalAdults = props.rooms.reduce((s, r) => s + r.adults, 0);
+export function ConfirmationDocument(props: ConfirmationData) {
+  const totalAdults   = props.rooms.reduce((s, r) => s + r.adults, 0);
   const totalChildren = props.rooms.reduce((s, r) => s + r.children, 0);
 
   return (
@@ -199,45 +187,63 @@ export function QuotationDocument(props: QuotationData) {
       <Page size="A4" style={styles.page}>
         {/* HEADER */}
         <View style={styles.header}>
-          <Text style={styles.hotelName}>{props.tenantName}</Text>
-          <Text style={styles.cotizacionTitle}>Cotización</Text>
+          {props.logoBase64 ? (
+            <Image src={props.logoBase64} style={styles.logoImg} />
+          ) : (
+            <Text style={{ ...styles.confirmTitle, fontSize: 16, color: '#ffffff', letterSpacing: 8, marginBottom: 12 }}>
+              {props.tenantName.toUpperCase()}
+            </Text>
+          )}
+          <Text style={styles.confirmTitle}>Confirmación de Reserva</Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>CONFIRMADA</Text>
+          </View>
         </View>
+
+        <View style={styles.divider} />
 
         {/* INFO BLOCK */}
         <View style={styles.infoBlock}>
           <View style={styles.infoLeft}>
+            {props.confirmationNumber && (
+              <Text style={styles.infoRow}>
+                <Text style={styles.infoLabel}># Confirmación  </Text>
+                {props.confirmationNumber}
+              </Text>
+            )}
             <Text style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Fecha:  </Text>
-              {fmtDateRange(props.checkInDate, props.checkOutDate)}
-            </Text>
-            <Text style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Noches:  </Text>
-              {props.nights}
-            </Text>
-            <Text style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Huésped:  </Text>
+              <Text style={styles.infoLabel}>Huésped  </Text>
               {props.guestName}
             </Text>
             <Text style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Huéspedes:  </Text>
+              <Text style={styles.infoLabel}>Fechas  </Text>
+              {fmtDateRange(props.checkInDate, props.checkOutDate)}
+            </Text>
+            <Text style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Noches  </Text>
+              {props.nights}
+            </Text>
+            <Text style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Huéspedes  </Text>
               {totalAdults} adulto{totalAdults !== 1 ? 's' : ''}
               {totalChildren > 0 ? `, ${totalChildren} niño${totalChildren !== 1 ? 's' : ''}` : ''}
             </Text>
           </View>
           <View style={styles.infoRight}>
             <Text style={styles.infoRow}>Desayuno incluido</Text>
+            <Text style={styles.infoRow}>Estacionamiento gratuito</Text>
             <Text style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Habitaciones:  </Text>
+              <Text style={styles.infoLabel}>Habitaciones  </Text>
               {props.rooms.length}
             </Text>
             {props.requiresInvoice && (
               <>
                 <Text style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>IVA (21%):  </Text>
+                  <Text style={styles.infoLabel}>IVA (21%)  </Text>
                   {fmt(props.iva)}
                 </Text>
                 <Text style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Total c/factura:  </Text>
+                  <Text style={styles.infoLabel}>Total c/factura  </Text>
                   {fmt(props.totalWithTax)}
                 </Text>
               </>
@@ -245,14 +251,13 @@ export function QuotationDocument(props: QuotationData) {
           </View>
         </View>
 
-        {/* DIVIDER + RESERVA */}
         <View style={styles.divider} />
         <Text style={styles.sectionTitle}>
-          {props.rooms.length === 1 ? 'Reserva' : `Reserva · ${props.rooms.length} habitaciones`}
+          {props.rooms.length === 1 ? 'Detalle de reserva' : `Detalle · ${props.rooms.length} habitaciones`}
         </Text>
         <View style={styles.divider} />
 
-        {/* TABLE HEADER */}
+        {/* TABLE */}
         <View style={styles.tableHeader}>
           <View style={styles.colRoom}>
             <Text style={styles.tableHeaderText}>Habitación</Text>
@@ -261,16 +266,12 @@ export function QuotationDocument(props: QuotationData) {
             <Text style={styles.tableHeaderText}>Precio x noche</Text>
           </View>
           <View style={styles.colTotal}>
-            <Text style={styles.tableHeaderText}>Precio total</Text>
+            <Text style={styles.tableHeaderText}>Total</Text>
           </View>
         </View>
 
-        {/* TABLE ROWS — one per room */}
         {props.rooms.map((room, idx) => (
-          <View
-            key={idx}
-            style={idx < props.rooms.length - 1 ? styles.tableRow : styles.tableRowLast}
-          >
+          <View key={idx} style={idx < props.rooms.length - 1 ? styles.tableRow : styles.tableRowLast}>
             <View style={styles.colRoom}>
               <Text style={styles.roomNameText}>{room.roomName}</Text>
               <Text style={styles.amenityText}>
@@ -288,7 +289,6 @@ export function QuotationDocument(props: QuotationData) {
           </View>
         ))}
 
-        {/* GRAND TOTAL */}
         {props.rooms.length > 1 && (
           <>
             <View style={styles.divider} />
@@ -297,6 +297,13 @@ export function QuotationDocument(props: QuotationData) {
               <Text style={styles.totalValue}>{fmt(props.grandSubtotal)}</Text>
             </View>
           </>
+        )}
+
+        {props.notes && (
+          <View style={styles.notesBox}>
+            <Text style={styles.notesLabel}>Notas</Text>
+            <Text style={styles.notesText}>{props.notes}</Text>
+          </View>
         )}
 
         {/* FOOTER */}
@@ -308,7 +315,7 @@ export function QuotationDocument(props: QuotationData) {
             <Text style={styles.footerLogoText}>{props.tenantName.toUpperCase()}</Text>
           )}
           <View style={styles.divider} />
-          {props.tenantPhone ? <Text style={styles.footerContact}>{props.tenantPhone}</Text> : null}
+          {props.tenantPhone   ? <Text style={styles.footerContact}>{props.tenantPhone}</Text>   : null}
           {props.tenantAddress ? <Text style={styles.footerContact}>{props.tenantAddress}</Text> : null}
         </View>
       </Page>

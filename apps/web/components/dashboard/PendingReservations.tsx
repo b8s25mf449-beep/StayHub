@@ -46,13 +46,14 @@ export default function PendingReservations() {
         </h3>
       </div>
 
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto -mx-4 px-4">
+      <table className="w-full min-w-[600px] text-sm">
         <thead>
           <tr>
             {['#', 'Huésped', 'Hab.', 'Check-in', 'Check-out', 'Total', ''].map((h) => (
               <th
                 key={h}
-                className="text-left text-xs text-muted uppercase tracking-wider pb-2 font-medium"
+                className="text-left text-xs text-muted uppercase tracking-wider pb-2 font-medium whitespace-nowrap"
               >
                 {h}
               </th>
@@ -71,7 +72,7 @@ export default function PendingReservations() {
                 className="group border-t border-border"
                 style={{ animationDelay: `${i * 30}ms` }}
               >
-                <td className="py-2.5 pr-3">
+                <td className="py-2.5 pr-3 whitespace-nowrap">
                   <Link
                     href={`/reservations/${r.id}`}
                     className="font-mono text-xs text-muted hover:text-primary transition-colors flex items-center gap-1"
@@ -83,15 +84,15 @@ export default function PendingReservations() {
                 <td className="py-2.5 pr-3 text-white">
                   {g ? `${g.firstName} ${g.lastName}` : '—'}
                 </td>
-                <td className="py-2.5 pr-3 font-mono text-xs text-muted">
+                <td className="py-2.5 pr-3 font-mono text-xs text-muted whitespace-nowrap">
                   {room?.roomNumber ?? '—'}
                 </td>
-                <td className="py-2.5 pr-3 text-[#ccc]">{formatDate(r.checkInDate)}</td>
-                <td className="py-2.5 pr-3 text-[#ccc]">{formatDate(r.checkOutDate)}</td>
-                <td className="py-2.5 pr-3 font-mono text-sm text-white">
+                <td className="py-2.5 pr-3 text-[#ccc] whitespace-nowrap">{formatDate(r.checkInDate)}</td>
+                <td className="py-2.5 pr-3 text-[#ccc] whitespace-nowrap">{formatDate(r.checkOutDate)}</td>
+                <td className="py-2.5 pr-3 font-mono text-sm text-white whitespace-nowrap">
                   {formatPrice(Number(r.totalAmount || r.baseAmount))}
                 </td>
-                <td className="py-2">
+                <td className="py-2 whitespace-nowrap">
                   <div className="flex items-center gap-1.5 justify-end">
                     <button
                       onClick={() => handleCheckIn(r.id)}
@@ -114,6 +115,7 @@ export default function PendingReservations() {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
