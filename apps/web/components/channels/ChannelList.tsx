@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import useSWR, { mutate } from 'swr';
-import { RefreshCw, Plus, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { RefreshCw, Plus, AlertCircle, CheckCircle2, X, Pencil, Check } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
 import { CHANNEL_LABELS, formatDate } from '@/lib/utils';
@@ -42,6 +42,9 @@ export default function ChannelList() {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editUrl, setEditUrl] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
   const [form, setForm] = useState({
     propertyId: '',
     roomId: '',
@@ -82,6 +85,23 @@ export default function ChannelList() {
       setFormError(err?.response?.data?.message ?? 'Error al guardar');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function startEdit(c: ChannelConnection) {
+    setEditingId(c.id);
+    setEditUrl((c as any).icalUrl ?? '');
+  }
+
+  async function handleSaveEdit(id: string) {
+    if (!editUrl.trim()) return;
+    setEditSaving(true);
+    try {
+      await api.patch(`/api/v1/channels/${id}`, { icalUrl: editUrl.trim() });
+      mutate('/api/v1/channels');
+      setEditingId(null);
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -146,56 +166,98 @@ export default function ChannelList() {
               </tr>
             ) : (
               connections.map((c) => {
-                const room = roomMap[c.roomId];
-                const status = STATUS_CONFIG[c.status] ?? STATUS_CONFIG.inactive;
-                const isSyncing = syncing === c.id;
+                const room     = roomMap[c.roomId];
+                const status   = STATUS_CONFIG[c.status] ?? STATUS_CONFIG.inactive;
+                const isSyncing  = syncing === c.id;
+                const isEditing  = editingId === c.id;
+
                 return (
-                  <tr key={c.id} className="border-t border-border group hover:bg-[#0f1520] transition-colors">
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-medium text-white flex items-center gap-2">
-                        <span className="text-base leading-none">{CHANNEL_ICONS[c.channel] ?? '🌐'}</span>
-                        {CHANNEL_LABELS[c.channel]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-muted">
-                      Hab. {room?.roomNumber ?? '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${status.className}`}>
-                        {status.label}
-                      </span>
-                      {c.lastError && (
-                        <p className="text-[10px] text-[#f87171] mt-0.5 max-w-[160px] truncate" title={c.lastError}>
-                          {c.lastError}
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted">
-                      {c.lastSyncAt ? formatDate(c.lastSyncAt.split('T')[0]) : '—'}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-muted">
-                      {c.lastSyncCount ?? 0}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleSync(c.id)}
-                          disabled={isSyncing}
-                          className="press flex items-center gap-1.5 text-xs bg-surface border border-border text-[#ccc] px-3 py-1.5 rounded-lg disabled:opacity-40 hover:border-[#0f766e44] hover:text-white transition-colors"
-                        >
-                          <RefreshCw size={11} className={isSyncing ? 'animate-spin' : ''} />
-                          {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(c.id)}
-                          className="press text-xs text-muted hover:text-[#f87171] px-2 py-1.5 rounded-lg transition-colors"
-                          title="Eliminar conexión"
-                        >
-                          <X size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <React.Fragment key={c.id}>
+                    <tr className="border-t border-border group hover:bg-[#0f1520] transition-colors">
+                      <td className="px-4 py-3">
+                        <span className="text-sm font-medium text-white flex items-center gap-2">
+                          <span className="text-base leading-none">{CHANNEL_ICONS[c.channel] ?? '🌐'}</span>
+                          {CHANNEL_LABELS[c.channel]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted">
+                        Hab. {room?.roomNumber ?? '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${status.className}`}>
+                          {status.label}
+                        </span>
+                        {c.lastError && (
+                          <p className="text-[10px] text-[#f87171] mt-0.5 max-w-[160px] truncate" title={c.lastError}>
+                            {c.lastError}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted">
+                        {c.lastSyncAt ? formatDate(c.lastSyncAt.split('T')[0]) : '—'}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted">
+                        {c.lastSyncCount ?? 0}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleSync(c.id)}
+                            disabled={isSyncing}
+                            className="press flex items-center gap-1.5 text-xs bg-surface border border-border text-[#ccc] px-3 py-1.5 rounded-lg disabled:opacity-40 hover:border-[#0f766e44] hover:text-white transition-colors"
+                          >
+                            <RefreshCw size={11} className={isSyncing ? 'animate-spin' : ''} />
+                            {isSyncing ? '...' : 'Sync'}
+                          </button>
+                          <button
+                            onClick={() => isEditing ? setEditingId(null) : startEdit(c)}
+                            className="press text-xs text-muted hover:text-white px-2 py-1.5 rounded-lg transition-colors"
+                            title="Editar URL"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(c.id)}
+                            className="press text-xs text-muted hover:text-[#f87171] px-2 py-1.5 rounded-lg transition-colors"
+                            title="Eliminar conexión"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {isEditing && (
+                      <tr key={`${c.id}-edit`} className="border-t border-[#0f766e33] bg-[#0f766e05]">
+                        <td colSpan={6} className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted whitespace-nowrap">URL iCal:</span>
+                            <input
+                              type="url"
+                              value={editUrl}
+                              onChange={(e) => setEditUrl(e.target.value)}
+                              autoFocus
+                              className="input-field flex-1 bg-bg border border-border rounded-lg px-3 py-1.5 text-xs text-white placeholder-muted"
+                              placeholder="https://..."
+                            />
+                            <button
+                              onClick={() => handleSaveEdit(c.id)}
+                              disabled={editSaving || !editUrl.trim()}
+                              className="press flex items-center gap-1 text-xs bg-primary text-white px-3 py-1.5 rounded-lg disabled:opacity-40"
+                            >
+                              <Check size={11} />
+                              {editSaving ? 'Guardando...' : 'Guardar'}
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="press text-xs text-muted hover:text-white px-2 py-1.5 rounded-lg"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })
             )}

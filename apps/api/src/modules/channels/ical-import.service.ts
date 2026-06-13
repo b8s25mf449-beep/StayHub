@@ -76,6 +76,14 @@ export class ICalImportService {
 
       const checkInDate = this.toDateString(start);
       const checkOutDate = this.toDateString(end);
+
+      // Skip reservations that already checked out before today
+      const today = this.toDateString(new Date());
+      if (checkOutDate < today) {
+        result.skipped++;
+        continue;
+      }
+
       const rawSummary = component.summary as string | { val: string; params?: Record<string, string> } | undefined;
       const summaryStr = rawSummary && typeof rawSummary === 'object' ? rawSummary.val : (rawSummary ?? '');
 
