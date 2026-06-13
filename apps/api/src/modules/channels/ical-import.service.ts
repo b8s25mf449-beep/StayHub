@@ -76,7 +76,17 @@ export class ICalImportService {
 
       const checkInDate = this.toDateString(start);
       const checkOutDate = this.toDateString(end);
-      const summary = component.summary as string | { val: string; params?: Record<string, string> } | undefined;
+      const rawSummary = component.summary as string | { val: string; params?: Record<string, string> } | undefined;
+      const summaryStr = rawSummary && typeof rawSummary === 'object' ? rawSummary.val : (rawSummary ?? '');
+
+      // Skip blocked dates (no guest)
+      if (/^(CLOSED|BLOCKED|UNAVAILABLE|NO DISPONIBLE)/i.test(summaryStr.trim())) {
+        result.skipped++;
+        continue;
+      }
+
+      const parsed = this.parseSummary(summaryStr, connection.channel);
+      const email = this.extractEmail(component);
 
       try {
         const existing = await this.reservationRepo.findOne({
@@ -88,20 +98,29 @@ export class ICalImportService {
         });
 
         if (existing) {
+          let changed = false;
           if (existing.checkInDate !== checkInDate || existing.checkOutDate !== checkOutDate) {
             existing.checkInDate = checkInDate;
             existing.checkOutDate = checkOutDate;
+            changed = true;
+          }
+          if (parsed.totalAmount > 0 && existing.totalAmount !== parsed.totalAmount) {
+            existing.totalAmount = parsed.totalAmount;
+            existing.baseAmount = parsed.totalAmount;
+            changed = true;
+          }
+          if (changed) {
             await this.reservationRepo.save(existing);
             result.updated++;
           } else {
             result.skipped++;
           }
         } else {
-          const { firstName, lastName } = this.parseGuestName(summary, connection.channel);
           const guest = this.guestRepo.create({
             tenantId: connection.tenantId,
-            firstName,
-            lastName,
+            firstName: parsed.firstName,
+            lastName: parsed.lastName,
+            ...(email ? { email } : {}),
             status: GuestStatus.ACTIVE,
             notes: `Auto-importado vía iCal. UID: ${uid}`,
           });
@@ -119,8 +138,8 @@ export class ICalImportService {
               status: ReservationStatus.CONFIRMED,
               checkInDate,
               checkOutDate,
-              baseAmount: 0,
-              totalAmount: 0,
+              baseAmount: parsed.totalAmount,
+              totalAmount: parsed.totalAmount,
               adultsCount: 1,
             });
             await this.reservationRepo.save(reservation);
@@ -151,17 +170,47 @@ export class ICalImportService {
     return `${year}-${month}-${day}`;
   }
 
-  private parseGuestName(
-    summary: string | { val: string; params?: Record<string, string> } | undefined,
+  /**
+   * Parses Octorate SUMMARY format:
+   * "Client Name (Sanchez Reyes) Total (2553.47) Period (13/06/2026 to 16/06/2026)"
+   * Also handles plain name strings from other channels.
+   */
+  private parseSummary(
+    summary: string,
     channel: ChannelType,
-  ): { firstName: string; lastName: string } {
-    const raw = summary && typeof summary === 'object' ? summary.val : summary;
-    if (raw) {
-      const parts = raw.trim().split(/\s+/);
-      if (parts.length >= 2) return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
-      if (parts[0]) return { firstName: parts[0], lastName: this.channelLabel(channel) };
+  ): { firstName: string; lastName: string; totalAmount: number } {
+    // Octorate format: Client Name (...) Total (...) Period (...)
+    const nameMatch = summary.match(/Client\s+Name\s*\(([^)]+)\)/i);
+    const totalMatch = summary.match(/Total\s*\(([0-9]+(?:\.[0-9]{1,2})?)\)/i);
+
+    const totalAmount = totalMatch ? parseFloat(totalMatch[1]) : 0;
+
+    if (nameMatch) {
+      const fullName = nameMatch[1].trim();
+      const parts = fullName.split(/\s+/);
+      // Octorate puts last name first: "Sanchez Reyes" or "Rivera Betancourt Tania L"
+      if (parts.length >= 2) {
+        const firstName = parts[parts.length - 1];
+        const lastName = parts.slice(0, -1).join(' ');
+        return { firstName, lastName, totalAmount };
+      }
+      return { firstName: fullName, lastName: this.channelLabel(channel), totalAmount };
     }
-    return { firstName: 'OTA', lastName: this.channelLabel(channel) };
+
+    // Fallback: plain name string
+    const parts = summary.trim().split(/\s+/);
+    if (parts.length >= 2) return { firstName: parts[0], lastName: parts.slice(1).join(' '), totalAmount };
+    if (parts[0]) return { firstName: parts[0], lastName: this.channelLabel(channel), totalAmount };
+    return { firstName: 'OTA', lastName: this.channelLabel(channel), totalAmount };
+  }
+
+  /** Extract email from ATTENDEE or ORGANIZER MAILTO fields */
+  private extractEmail(component: ical.VEvent): string | null {
+    const attendee = (component as any).attendee;
+    if (!attendee) return null;
+    const raw = typeof attendee === 'string' ? attendee : attendee?.val ?? '';
+    const match = raw.match(/mailto:([^\s;>]+)/i);
+    return match ? match[1].toLowerCase() : null;
   }
 
   private channelLabel(channel: ChannelType): string {
