@@ -22,13 +22,14 @@ export default function StatsGrid() {
 
   const pendingCount = reservations.filter((r) => r.status === 'pending').length;
 
+  // Only count guests who actually arrived — checked_in or checked_out
   const monthlyRevenue = reservations
     .filter(
       (r) =>
         r.checkInDate.startsWith(currentMonth) &&
-        ['confirmed', 'checked_in', 'checked_out'].includes(r.status)
+        ['checked_in', 'checked_out'].includes(r.status)
     )
-    .reduce((sum, r) => sum + Number(r.baseAmount), 0);
+    .reduce((sum, r) => sum + Number(r.totalAmount || r.baseAmount), 0);
 
   const stats = [
     {
