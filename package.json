@@ -1,0 +1,13 @@
+{
+  "name": "stayhub",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd apps/web && npm install && npm run build",
+    "start": "cd apps/web && npm start",
+    "dev": "cd apps/web && npm run dev"
+  },
+  "dependencies": {
+    "next": "14.2.35"
+  }
+}
