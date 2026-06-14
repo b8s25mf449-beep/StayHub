@@ -3,17 +3,24 @@ import {
   UnauthorizedException,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 import { User, UserStatus } from '../../users/entities/user.entity';
+import { Role } from '../../users/entities/role.entity';
+import { Tenant, TenantStatus, TenantPlan } from '../../tenants/entities/tenant.entity';
 import { LoginDto } from '../dto/login.dto';
+import { RegisterDto } from '../dto/register.dto';
+import { ForgotPasswordDto } from '../dto/forgot-password.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { PasswordService } from './password.service';
 import { TotpService } from './totp.service';
 import { BruteForceService } from './brute-force.service';
 import { RefreshTokenService } from './refresh-token.service';
+import { MailService } from './mail.service';
 
 export interface JwtPayload {
   sub: string;
@@ -42,10 +49,15 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Role)
+    private readonly roleRepo: Repository<Role>,
+    @InjectRepository(Tenant)
+    private readonly tenantRepo: Repository<Tenant>,
     private readonly passwordService: PasswordService,
     private readonly totpService: TotpService,
     private readonly bruteForceService: BruteForceService,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly mailService: MailService,
     private readonly configService: ConfigService,
   ) {
     this.privateKey = configService.get<string>('jwt.privateKey')!;
@@ -160,6 +172,97 @@ export class AuthService {
       totpSecret: undefined,
       backupCodes: undefined,
     });
+  }
+
+  async register(
+    dto: RegisterDto,
+    meta: { ipAddress: string; userAgent: string },
+  ): Promise<AuthTokens> {
+    const existing = await this.userRepo.findOne({ where: { email: dto.email.toLowerCase() } });
+    if (existing) throw new ConflictException('Email already registered');
+
+    this.passwordService.validatePolicy(dto.password);
+
+    const slug = dto.hotelName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 50);
+
+    const baseSlug = slug || 'hotel';
+    let finalSlug = baseSlug;
+    let attempt = 1;
+    while (await this.tenantRepo.findOne({ where: { slug: finalSlug } })) {
+      finalSlug = `${baseSlug}-${attempt++}`;
+    }
+
+    const tenant = this.tenantRepo.create({
+      name: dto.hotelName,
+      slug: finalSlug,
+      status: TenantStatus.ACTIVE,
+      plan: TenantPlan.STARTER,
+    });
+    const savedTenant = await this.tenantRepo.save(tenant);
+
+    const adminRole = await this.roleRepo.findOne({ where: { name: 'admin' } });
+    const passwordHash = await this.passwordService.hash(dto.password);
+
+    const user = this.userRepo.create({
+      tenantId: savedTenant.id,
+      email: dto.email.toLowerCase(),
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      passwordHash,
+      status: UserStatus.ACTIVE,
+      emailVerified: true,
+      roles: adminRole ? [adminRole] : [],
+    });
+    const savedUser = await this.userRepo.save(user);
+
+    return this.generateTokens(savedUser, meta);
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ resetUrl?: string }> {
+    const user = await this.userRepo.findOne({ where: { email: dto.email.toLowerCase() } });
+
+    // Always return success to prevent email enumeration
+    if (!user) return {};
+
+    const resetToken = jwt.sign(
+      { sub: user.id, type: 'password_reset' },
+      this.privateKey,
+      { algorithm: 'RS256', expiresIn: 3600 },
+    );
+
+    const frontendUrl = process.env.FRONTEND_URL ?? 'https://stayhub-web-theta.vercel.app';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    const result = await this.mailService.sendPasswordReset(user.email, resetUrl);
+
+    // If email not configured, return the URL so the web can show it
+    return result.skipped ? { resetUrl } : {};
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<void> {
+    let payload: { sub: string; type: string };
+    try {
+      payload = jwt.verify(dto.token, this.publicKey, { algorithms: ['RS256'] }) as { sub: string; type: string };
+    } catch {
+      throw new BadRequestException('Token inválido o expirado');
+    }
+
+    if (payload.type !== 'password_reset') {
+      throw new BadRequestException('Token inválido');
+    }
+
+    const user = await this.userRepo.findOne({ where: { id: payload.sub } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    this.passwordService.validatePolicy(dto.newPassword);
+    const passwordHash = await this.passwordService.hash(dto.newPassword);
+    await this.userRepo.update(user.id, { passwordHash, passwordChangedAt: new Date() });
   }
 
   signAccessToken(payload: JwtPayload): string {

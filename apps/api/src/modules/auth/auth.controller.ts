@@ -12,6 +12,9 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './services/auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { TotpVerifyDto } from './dto/totp-setup.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -33,6 +36,32 @@ export class AuthController {
       ipAddress: req.ip ?? 'unknown',
       userAgent: req.headers['user-agent'] ?? 'unknown',
     });
+  }
+
+  @Public()
+  @Post('register')
+  @ApiOperation({ summary: 'Create a new hotel account' })
+  async register(@Body() dto: RegisterDto, @Req() req: Request) {
+    return this.authService.register(dto, {
+      ipAddress: req.ip ?? 'unknown',
+      userAgent: req.headers['user-agent'] ?? 'unknown',
+    });
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request password reset email' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Reset password with token from email' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto);
   }
 
   @Public()
