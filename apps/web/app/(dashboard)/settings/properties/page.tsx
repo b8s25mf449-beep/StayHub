@@ -21,7 +21,8 @@ export default function PropertiesPage() {
   const { properties, activeProperty, switchProperty, refetch, plan, canAddProperty } = useProperty();
   const { user } = useAuth();
   const isSuperAdmin = user?.roles?.includes('super_admin') ?? false;
-  const isAdmin = user?.roles?.some((r) => r === 'admin' || r === 'super_admin') ?? false;
+  // Any authenticated user can manage their own properties (self-service hotel owner)
+  const isAdmin = !!user;
 
   const [showModal, setShowModal] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | undefined>(undefined);
