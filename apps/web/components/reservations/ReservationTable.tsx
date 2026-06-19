@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import useSWR from 'swr';
+import Link from 'next/link';
+import { Building2 } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import { formatDate, formatPrice, STATUS_LABELS, STATUS_COLORS, todayISO } from '@/lib/utils';
+import { useProperty } from '@/lib/property-context';
 import type { Reservation, Guest, Room } from '@/types';
 
 const FILTERS = [
@@ -17,16 +20,21 @@ const FILTERS = [
 export default function ReservationTable() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const { activeProperty } = useProperty();
 
   const { data: reservations = [] } = useSWR<Reservation[]>('/api/v1/reservations', fetcher);
   const { data: guests = [] } = useSWR<Guest[]>('/api/v1/guests', fetcher);
-  const { data: rooms = [] } = useSWR<Room[]>('/api/v1/rooms', fetcher);
+  const roomsKey = activeProperty ? `/api/v1/rooms?propertyId=${activeProperty.id}` : null;
+  const { data: rooms = [] } = useSWR<Room[]>(roomsKey, fetcher);
 
   const guestMap = Object.fromEntries(guests.map((g) => [g.id, g]));
   const roomMap = Object.fromEntries(rooms.map((r) => [r.id, r]));
+  const propertyRoomIds = new Set(rooms.map((r) => r.id));
   const today = todayISO();
 
   const filtered = reservations.filter((r) => {
+    if (activeProperty && !propertyRoomIds.has(r.roomId)) return false;
+
     const g = guestMap[r.guestId];
     const guestName = g ? `${g.firstName} ${g.lastName}`.toLowerCase() : '';
     const matchSearch =
@@ -43,6 +51,18 @@ export default function ReservationTable() {
 
     return matchSearch && matchFilter;
   });
+
+  if (!activeProperty) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Building2 size={32} className="text-muted mb-3" />
+        <p className="text-sm text-muted mb-3">Selecciona una propiedad para ver sus reservas.</p>
+        <Link href="/settings/properties" className="text-xs text-primary hover:underline">
+          Gestionar propiedades →
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div>

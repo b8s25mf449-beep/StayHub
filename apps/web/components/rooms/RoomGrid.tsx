@@ -6,14 +6,18 @@ import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
 import { ROOM_STATUS_COLORS, ROOM_STATUS_LABELS } from '@/lib/utils';
 import type { Room, RoomType } from '@/types';
-import { Pencil, DollarSign, Trash2, Check } from 'lucide-react';
+import { Pencil, DollarSign, Trash2, Check, Building2 } from 'lucide-react';
+import Link from 'next/link';
 import RatesDrawer from './RatesDrawer';
 import EditRoomModal from './EditRoomModal';
+import { useProperty } from '@/lib/property-context';
 
 const STATUS_OPTIONS: Room['status'][] = ['available', 'occupied', 'cleaning', 'maintenance'];
 
 export default function RoomGrid() {
-  const { data: rooms = [] } = useSWR<Room[]>('/api/v1/rooms', fetcher);
+  const { activeProperty } = useProperty();
+  const roomsKey = activeProperty ? `/api/v1/rooms?propertyId=${activeProperty.id}` : null;
+  const { data: rooms = [] } = useSWR<Room[]>(roomsKey, fetcher);
   const { data: roomTypes = [] } = useSWR<RoomType[]>('/api/v1/room-types', fetcher);
   const [updating, setUpdating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -27,7 +31,7 @@ export default function RoomGrid() {
     setUpdating(room.id);
     try {
       await api.put(`/api/v1/rooms/${room.id}`, { status });
-      mutate('/api/v1/rooms');
+      mutate(roomsKey);
     } finally {
       setUpdating(null);
     }
@@ -38,10 +42,22 @@ export default function RoomGrid() {
     setConfirmDelete(null);
     try {
       await api.delete(`/api/v1/rooms/${room.id}`);
-      mutate('/api/v1/rooms');
+      mutate(roomsKey);
     } finally {
       setDeleting(null);
     }
+  }
+
+  if (!activeProperty) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Building2 size={32} className="text-muted mb-3" />
+        <p className="text-sm text-muted mb-3">Selecciona una propiedad para ver sus habitaciones.</p>
+        <Link href="/settings/properties" className="text-xs text-primary hover:underline">
+          Gestionar propiedades →
+        </Link>
+      </div>
+    );
   }
 
   return (

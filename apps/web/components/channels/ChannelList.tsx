@@ -6,6 +6,7 @@ import { RefreshCw, Plus, AlertCircle, CheckCircle2, X, Pencil, Check } from 'lu
 import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
 import { CHANNEL_LABELS } from '@/lib/utils';
+import { useProperty } from '@/lib/property-context';
 import type { ChannelConnection, Room, Property, SyncResult } from '@/types';
 
 const CHANNEL_OPTIONS = ['booking_com', 'airbnb', 'expedia', 'ical', 'vrbo'] as const;
@@ -33,6 +34,7 @@ interface SyncFeedback {
 }
 
 export default function ChannelList() {
+  const { activeProperty } = useProperty();
   const { data: connections = [] } = useSWR<ChannelConnection[]>('/api/v1/channels', fetcher);
   const { data: rooms = [] } = useSWR<Room[]>('/api/v1/rooms', fetcher);
   const { data: properties = [] } = useSWR<Property[]>('/api/v1/properties', fetcher);
@@ -52,6 +54,11 @@ export default function ChannelList() {
     channel: 'booking_com' as typeof CHANNEL_OPTIONS[number],
     icalUrl: '',
   });
+
+  function openForm() {
+    setForm({ propertyId: activeProperty?.id ?? '', roomId: '', channel: 'booking_com', icalUrl: '' });
+    setShowForm(true);
+  }
 
   const roomMap = Object.fromEntries(rooms.map((r) => [r.id, r]));
   const roomsByProperty = rooms.filter((r) => r.propertyId === form.propertyId);
@@ -119,8 +126,12 @@ export default function ChannelList() {
 
   async function handleDelete(id: string) {
     if (!confirm('¿Eliminar esta conexión?')) return;
-    await api.delete(`/api/v1/channels/${id}`);
-    mutate('/api/v1/channels');
+    try {
+      await api.delete(`/api/v1/channels/${id}`);
+      mutate('/api/v1/channels');
+    } catch {
+      alert('Error al eliminar la conexión. Intentá de nuevo.');
+    }
   }
 
   return (
@@ -299,7 +310,7 @@ export default function ChannelList() {
       {/* Add connection form */}
       {!showForm ? (
         <button
-          onClick={() => setShowForm(true)}
+          onClick={openForm}
           className="press flex items-center gap-2 text-sm bg-primary text-white px-4 py-2.5 rounded-lg font-medium"
         >
           <Plus size={14} />

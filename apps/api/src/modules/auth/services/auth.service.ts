@@ -81,8 +81,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (user.status === UserStatus.SUSPENDED) {
-      throw new UnauthorizedException('Account suspended');
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('Account is not active');
     }
 
     const passwordValid = await this.passwordService.verify(user.passwordHash, dto.password);

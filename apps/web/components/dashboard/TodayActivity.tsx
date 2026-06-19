@@ -41,19 +41,19 @@ export default function TodayActivity() {
 
   const arrivals = dedupByRoomId(
     reservations.filter(
-      (r) => r.checkInDate === today && ['pending', 'confirmed'].includes(r.status),
+      (r) => r.checkInDate.slice(0, 10) === today && ['pending', 'confirmed'].includes(r.status),
     ),
   ).sort((a, b) => (roomMap[a.roomId]?.roomNumber ?? '').localeCompare(roomMap[b.roomId]?.roomNumber ?? '', undefined, { numeric: true }));
 
   const inHouse = dedupByRoomId(
     reservations.filter(
-      (r) => r.status === 'checked_in' && r.checkOutDate > today,
+      (r) => r.status === 'checked_in' && r.checkOutDate.slice(0, 10) > today,
     ),
   ).sort((a, b) => a.checkOutDate.localeCompare(b.checkOutDate));
 
   const departures = dedupByRoomId(
     reservations.filter(
-      (r) => r.status === 'checked_in' && r.checkOutDate === today,
+      (r) => r.status === 'checked_in' && r.checkOutDate.slice(0, 10) === today,
     ),
   ).sort((a, b) => (roomMap[a.roomId]?.roomNumber ?? '').localeCompare(roomMap[b.roomId]?.roomNumber ?? '', undefined, { numeric: true }));
 

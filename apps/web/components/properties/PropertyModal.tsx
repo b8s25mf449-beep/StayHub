@@ -55,6 +55,8 @@ export default function PropertyModal({ property, onClose, onSaved }: Props) {
         checkInTime: (p.checkInTime as string) ?? '',
         checkOutTime: (p.checkOutTime as string) ?? '',
       });
+    } else {
+      setForm({ name: '', type: 'hotel', address: '', city: '', country: '', phone: '', email: '', checkInTime: '', checkOutTime: '' });
     }
   }, [property]);
 

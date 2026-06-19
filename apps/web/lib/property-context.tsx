@@ -31,7 +31,10 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
   const [plan, setPlan] = useState('starter');
 
   const fetchProperties = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     try {
       const [propsRes, tenantRes] = await Promise.all([
         api.get<Property[]>('/api/v1/properties'),

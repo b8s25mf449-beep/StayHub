@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import useSWR, { mutate as swrMutate } from 'swr';
+import Link from 'next/link';
 import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
-import { ChevronLeft, ChevronRight, Eye, Move, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, Move, AlertCircle, Building2 } from 'lucide-react';
 import { calcNights } from '@/lib/utils';
+import { useProperty } from '@/lib/property-context';
 import type { Room, RoomType, Reservation, Guest } from '@/types';
 import QuickReservationModal from './QuickReservationModal';
 
@@ -88,11 +90,16 @@ export default function PmsCalendar() {
   const dragRef   = useRef<DragState | null>(null);
   const roomsRef  = useRef<Room[]>([]);
 
+  const { activeProperty } = useProperty();
+
   /* Data */
-  const { data: rooms        = [] } = useSWR<Room[]>('/api/v1/rooms', fetcher);
+  const roomsKey = activeProperty ? `/api/v1/rooms?propertyId=${activeProperty.id}` : null;
+  const { data: rooms        = [] } = useSWR<Room[]>(roomsKey, fetcher);
   const { data: roomTypes    = [] } = useSWR<RoomType[]>('/api/v1/room-types', fetcher);
   const { data: reservations = [] } = useSWR<Reservation[]>('/api/v1/reservations', fetcher);
   const { data: guests       = [] } = useSWR<Guest[]>('/api/v1/guests', fetcher);
+
+  const propertyRoomIds = new Set(rooms.map((r) => r.id));
 
   useEffect(() => { roomsRef.current = rooms; }, [rooms]);
 
@@ -271,6 +278,7 @@ export default function PmsCalendar() {
     if (iso < todayStr) return;
     const busy = reservations.some(r =>
       r.roomId === roomId &&
+      propertyRoomIds.has(r.roomId) &&
       !['cancelled','no_show'].includes(r.status) &&
       iso >= r.checkInDate && iso < r.checkOutDate
     );
@@ -419,6 +427,18 @@ export default function PmsCalendar() {
   }
 
   /* ── JSX ────────────────────────────────── */
+  if (!activeProperty) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Building2 size={32} className="text-muted mb-3" />
+        <p className="text-sm text-muted mb-3">Selecciona una propiedad para ver el calendario.</p>
+        <Link href="/settings/properties" className="text-xs text-primary hover:underline">
+          Gestionar propiedades →
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
 

@@ -14,7 +14,7 @@ export class MailService {
       return { skipped: true };
     }
 
-    await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
@@ -42,6 +42,11 @@ export class MailService {
         `,
       }),
     });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`Resend error ${response.status}: ${body}`);
+    }
 
     return { skipped: false };
   }
