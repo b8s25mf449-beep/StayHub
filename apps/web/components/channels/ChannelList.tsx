@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import useSWR, { mutate } from 'swr';
-import { RefreshCw, Plus, AlertCircle, CheckCircle2, X, Pencil, Check, Bug } from 'lucide-react';
+import { RefreshCw, Plus, AlertCircle, CheckCircle2, X, Pencil, Check } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
 import { CHANNEL_LABELS } from '@/lib/utils';
@@ -346,10 +346,10 @@ export default function ChannelList() {
                           <button
                             onClick={() => handlePreview(c.id)}
                             disabled={previewing === c.id}
-                            className="press text-xs text-muted hover:text-[#a78bfa] px-2 py-1.5 rounded-lg transition-colors"
+                            className="press text-[10px] text-muted hover:text-[#a78bfa] border border-border px-2 py-1.5 rounded-lg transition-colors disabled:opacity-40"
                             title="Diagnóstico iCal"
                           >
-                            <Bug size={13} className={previewing === c.id ? 'animate-pulse' : ''} />
+                            {previewing === c.id ? '...' : '🔍'}
                           </button>
                           <button
                             onClick={() => handleDelete(c.id)}
@@ -406,7 +406,7 @@ export default function ChannelList() {
         <div className="bg-card border border-[#a78bfa33] rounded-xl overflow-hidden animate-fade-up">
           <div className="flex items-center justify-between px-4 py-2.5 bg-[#a78bfa0a] border-b border-[#a78bfa22]">
             <div className="flex items-center gap-2">
-              <Bug size={13} className="text-[#a78bfa]" />
+              <span className="text-[#a78bfa]">🔍</span>
               <span className="text-xs text-[#a78bfa] font-medium uppercase tracking-wider">
                 Diagnóstico iCal — Hab. {roomMap[connections.find(c => c.id === previewId)?.roomId ?? '']?.roomNumber ?? '?'}
               </span>
