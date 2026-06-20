@@ -160,9 +160,59 @@ export class ICalImportService {
       const rawSummary = component.summary as string | { val: string; params?: Record<string, string> } | undefined;
       const summaryStr = rawSummary && typeof rawSummary === 'object' ? rawSummary.val : (rawSummary ?? '');
 
-      // Skip blocked / maintenance dates — UID already in feedUids so stale cleanup is safe
+      // Blocked / maintenance events: if they cover today or the future, auto-create a
+      // placeholder reservation so the room shows as occupied without manual intervention.
+      // This handles Octorate removing in-progress guest details and replacing them with
+      // a generic BLOCKED marker once the guest is in-house.
       if (/^(CLOSED|BLOCKED|UNAVAILABLE|NO DISPONIBLE|BLOQUEADO|MANTENIMIENTO|NOT AVAILABLE)/i.test(summaryStr.trim())) {
-        result.skipped++;
+        const coversToday = checkInDate <= today && checkOutDate > today;
+        if (coversToday) {
+          // Only create if no active reservation already covers this room+dates
+          const overlap = await this.reservationRepo
+            .createQueryBuilder('r')
+            .where('r.tenant_id = :tenantId', { tenantId: connection.tenantId })
+            .andWhere('r.room_id = :roomId', { roomId: connection.roomId })
+            .andWhere('r.deleted_at IS NULL')
+            .andWhere('r.check_in_date <= :today AND r.check_out_date > :today', { today })
+            .getOne();
+
+          if (!overlap) {
+            try {
+              const guest = this.guestRepo.create({
+                tenantId: connection.tenantId,
+                firstName: 'Huésped',
+                lastName: 'Octorate',
+                status: GuestStatus.ACTIVE,
+                notes: `Auto-importado desde bloqueo iCal. UID: ${uid}`,
+              });
+              const savedGuest = await this.guestRepo.save(guest);
+              const placeholder = this.reservationRepo.create({
+                tenantId: connection.tenantId,
+                propertyId: connection.propertyId,
+                roomId: connection.roomId,
+                guestId: savedGuest.id,
+                confirmationNumber: this.generateConfirmationNumber(),
+                channelReservationId: uid,
+                source: this.toReservationSource(connection.channel),
+                status: ReservationStatus.CONFIRMED,
+                checkInDate,
+                checkOutDate,
+                baseAmount: 0,
+                totalAmount: 0,
+                adultsCount: 1,
+                notes: `Importado automáticamente desde bloqueo de Octorate (${summaryStr}). Editá los datos del huésped.`,
+              });
+              await this.reservationRepo.save(placeholder);
+              result.imported++;
+            } catch (err: any) {
+              result.errors.push({ uid, reason: `Blocked auto-import: ${err.message}` });
+            }
+          } else {
+            result.skipped++;
+          }
+        } else {
+          result.skipped++;
+        }
         continue;
       }
 
