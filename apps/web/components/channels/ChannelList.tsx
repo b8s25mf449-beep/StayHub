@@ -119,7 +119,6 @@ export default function ChannelList() {
       const { data: result } = await api.post<SyncResult>(`/api/v1/channels/${id}/sync`);
       mutate('/api/v1/channels');
       setFeedback({ id, result });
-      setTimeout(() => setFeedback(null), 8000);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } }; message?: string };
       setFeedback({ id, result: { imported: 0, updated: 0, skipped: 0, errors: [] }, error: err?.response?.data?.message ?? err?.message ?? 'Error al sincronizar' });
@@ -222,15 +221,31 @@ export default function ChannelList() {
             {feedback.error ? (
               <span>{feedback.error}</span>
             ) : (
-              <span>
-                Sync completado —{' '}
-                <span className="font-medium">{feedback.result.imported} importadas</span>
-                {feedback.result.updated > 0 && `, ${feedback.result.updated} actualizadas`}
-                {feedback.result.skipped > 0 && `, ${feedback.result.skipped} sin cambios`}
-                {feedback.result.errors.length > 0 && (
-                  <span className="text-[#fb923c]"> · {feedback.result.errors.length} errores</span>
+              <div>
+                <p className="font-medium text-sm mb-0.5">
+                  Sync completado — Hab. {roomMap[connections.find(c => c.id === feedback.id)?.roomId ?? '']?.roomNumber ?? '?'}
+                </p>
+                <p className="text-xs text-muted">
+                  {feedback.result.imported > 0
+                    ? <span className="text-[#4ade80]">{feedback.result.imported} reservas nuevas importadas</span>
+                    : <span>0 reservas nuevas</span>}
+                  {feedback.result.updated > 0 && <span className="ml-2 text-[#38bdf8]">· {feedback.result.updated} actualizadas</span>}
+                  {feedback.result.skipped > 0 && <span className="ml-2">· {feedback.result.skipped} sin cambios/pasadas</span>}
+                  {feedback.result.errors.length > 0 && <span className="ml-2 text-[#fb923c]">· {feedback.result.errors.length} errores</span>}
+                </p>
+                {feedback.result.imported === 0 && feedback.result.updated === 0 && (
+                  <p className="text-xs text-[#fb923c] mt-1">
+                    ⚠ Octorate no incluye esta reserva en el feed. Usá 🐛 para diagnosticar o creá la reserva manualmente.
+                  </p>
                 )}
-              </span>
+                {feedback.result.errors.length > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    {feedback.result.errors.slice(0, 3).map((e, i) => (
+                      <p key={i} className="text-[10px] text-[#fb923c] font-mono truncate">UID {e.uid}: {e.reason}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
           <button onClick={() => setFeedback(null)} className="text-muted hover:text-white">
@@ -312,7 +327,7 @@ export default function ChannelList() {
                         {c.lastSyncCount ?? 0}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1.5 justify-end">
                           <button
                             onClick={() => handleSync(c.id)}
                             disabled={isSyncing}
