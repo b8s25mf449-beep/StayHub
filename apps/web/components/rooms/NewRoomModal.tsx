@@ -5,6 +5,7 @@ import { mutate } from 'swr';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
+import { useProperty } from '@/lib/property-context';
 import type { Property, RoomType } from '@/types';
 import { X, DollarSign } from 'lucide-react';
 
@@ -13,11 +14,12 @@ interface Props {
 }
 
 export default function NewRoomModal({ onClose }: Props) {
+  const { activeProperty } = useProperty();
   const { data: properties = [] } = useSWR<Property[]>('/api/v1/properties', fetcher);
   const { data: roomTypes = [] } = useSWR<RoomType[]>('/api/v1/room-types', fetcher);
 
   const [form, setForm] = useState({
-    propertyId: '',
+    propertyId: activeProperty?.id ?? '',
     roomTypeId: '',
     roomNumber: '',
     floor: '',
@@ -53,7 +55,7 @@ export default function NewRoomModal({ onClose }: Props) {
         });
       }
 
-      mutate('/api/v1/rooms');
+      mutate(activeProperty ? `/api/v1/rooms?propertyId=${activeProperty.id}` : '/api/v1/rooms');
       onClose();
     } catch (err: unknown) {
       const anyErr = err as { response?: { data?: { message?: string } } };

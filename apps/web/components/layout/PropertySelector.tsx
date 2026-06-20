@@ -56,29 +56,30 @@ export default function PropertySelector() {
     <div
       ref={menuRef}
       style={{ top: pos.top, left: pos.left }}
-      className="fixed z-[9999] w-56 bg-[#0f1520] border border-[#1e2d3d] rounded-xl shadow-2xl overflow-hidden animate-fade-in"
+      className="fixed z-[9999] w-56 bg-[#0d1420] border border-[#1e2d3d] rounded-xl shadow-2xl overflow-hidden animate-popover-in"
     >
-      <div className="px-3 py-2 border-b border-[#1e2d3d]">
-        <p className="text-xs text-muted">Propiedad activa</p>
-        <p className="text-xs text-white font-medium truncate mt-0.5">
+      <div className="px-3 py-2.5 border-b border-[#1e2d3d]">
+        <p className="text-[10px] text-muted uppercase tracking-wider">Propiedad activa</p>
+        <p className="text-sm text-white font-medium truncate mt-0.5">
           {activeProperty?.name ?? 'Ninguna'}
         </p>
       </div>
 
       <div className="py-1 max-h-48 overflow-y-auto">
         {properties.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-muted">Sin propiedades</p>
+          <p className="px-3 py-2 text-xs text-muted italic">Sin propiedades aún</p>
         ) : (
           properties.map((p) => (
             <button
               key={p.id}
               onClick={() => { switchProperty(p.id); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-white/5 transition-colors text-left"
+              className="press w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg mx-1 hover:bg-white/5 transition-colors text-left"
+              style={{ width: 'calc(100% - 8px)' }}
             >
-              <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 bg-[#0f766e22] text-primary text-[10px] font-bold">
+              <div className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 bg-[#0f766e22] text-primary text-[10px] font-bold">
                 {p.name.slice(0, 2).toUpperCase()}
               </div>
-              <span className="flex-1 truncate text-white">{p.name}</span>
+              <span className="flex-1 truncate text-white text-xs">{p.name}</span>
               {activeProperty?.id === p.id && <Check size={12} className="text-primary flex-shrink-0" />}
             </button>
           ))
@@ -89,7 +90,7 @@ export default function PropertySelector() {
         {canAddProperty ? (
           <button
             onClick={() => { router.push('/settings/properties'); setOpen(false); }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-[#0f766e11] rounded-lg transition-colors"
+            className="press w-full flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-[#0f766e11] rounded-lg transition-colors"
           >
             <Plus size={13} />
             Nueva propiedad
@@ -99,7 +100,7 @@ export default function PropertySelector() {
             <p className="text-xs text-muted">{PLAN_LABELS[plan]}</p>
             <button
               onClick={() => { router.push('/settings/properties'); setOpen(false); }}
-              className="flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+              className="press flex items-center gap-1 text-xs text-primary hover:underline mt-1"
             >
               Gestionar propiedades <ChevronRight size={11} />
             </button>

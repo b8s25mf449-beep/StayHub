@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import useSWR, { mutate } from 'swr';
-import { RefreshCw, Plus, AlertCircle, CheckCircle2, X, Pencil, Check } from 'lucide-react';
+import { RefreshCw, Plus, AlertCircle, CheckCircle2, X, Pencil, Check, Bug } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import api from '@/lib/api';
 import { CHANNEL_LABELS } from '@/lib/utils';
@@ -33,6 +33,52 @@ interface SyncFeedback {
   error?: string;
 }
 
+interface PreviewEvent {
+  uid: string;
+  summary: string;
+  checkIn: string;
+  checkOut: string;
+  action: 'import' | 'update' | 'skip_past' | 'skip_blocked' | 'skip_missing_fields' | 'in_db';
+  reason: string;
+  existsInDb: boolean;
+}
+
+interface DbReservation {
+  id: string;
+  channelReservationId: string | null;
+  checkIn: string;
+  checkOut: string;
+  status: string;
+  deletedAt: string | null;
+}
+
+interface PreviewResult {
+  feedUrl: string;
+  today: string;
+  fetchStatus: 'ok' | 'error';
+  fetchError?: string;
+  events: PreviewEvent[];
+  dbReservations: DbReservation[];
+}
+
+const ACTION_COLORS: Record<PreviewEvent['action'], string> = {
+  import: 'text-[#4ade80]',
+  update: 'text-[#38bdf8]',
+  in_db: 'text-primary',
+  skip_past: 'text-muted',
+  skip_blocked: 'text-[#fb923c]',
+  skip_missing_fields: 'text-[#f87171]',
+};
+
+const ACTION_LABELS: Record<PreviewEvent['action'], string> = {
+  import: '→ IMPORTAR',
+  update: '→ ACTUALIZAR',
+  in_db: '✓ EN BD',
+  skip_past: '⊘ PASADO',
+  skip_blocked: '⊘ BLOQUEADO',
+  skip_missing_fields: '⊘ SIN CAMPOS',
+};
+
 export default function ChannelList() {
   const { activeProperty } = useProperty();
   const { data: connections = [] } = useSWR<ChannelConnection[]>('/api/v1/channels', fetcher);
@@ -42,6 +88,9 @@ export default function ChannelList() {
   const [syncing, setSyncing] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
   const [feedback, setFeedback] = useState<SyncFeedback | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<PreviewResult | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -121,6 +170,28 @@ export default function ChannelList() {
       mutate('/api/v1/channels');
     } finally {
       setSyncingAll(false);
+    }
+  }
+
+  async function handlePreview(id: string) {
+    setPreviewing(id);
+    setPreviewData(null);
+    setPreviewId(id);
+    try {
+      const { data } = await api.get<PreviewResult>(`/api/v1/channels/${id}/preview`);
+      setPreviewData(data);
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } }; message?: string };
+      setPreviewData({
+        feedUrl: '',
+        today: '',
+        fetchStatus: 'error',
+        fetchError: err?.response?.data?.message ?? err?.message ?? 'Error',
+        events: [],
+        dbReservations: [],
+      });
+    } finally {
+      setPreviewing(null);
     }
   }
 
@@ -258,6 +329,14 @@ export default function ChannelList() {
                             <Pencil size={13} />
                           </button>
                           <button
+                            onClick={() => handlePreview(c.id)}
+                            disabled={previewing === c.id}
+                            className="press text-xs text-muted hover:text-[#a78bfa] px-2 py-1.5 rounded-lg transition-colors"
+                            title="Diagnóstico iCal"
+                          >
+                            <Bug size={13} className={previewing === c.id ? 'animate-pulse' : ''} />
+                          </button>
+                          <button
                             onClick={() => handleDelete(c.id)}
                             className="press text-xs text-muted hover:text-[#f87171] px-2 py-1.5 rounded-lg transition-colors"
                             title="Eliminar conexión"
@@ -306,6 +385,81 @@ export default function ChannelList() {
         </table>
         </div>
       </div>
+
+      {/* iCal preview / diagnostic panel */}
+      {previewId && (
+        <div className="bg-card border border-[#a78bfa33] rounded-xl overflow-hidden animate-fade-up">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-[#a78bfa0a] border-b border-[#a78bfa22]">
+            <div className="flex items-center gap-2">
+              <Bug size={13} className="text-[#a78bfa]" />
+              <span className="text-xs text-[#a78bfa] font-medium uppercase tracking-wider">
+                Diagnóstico iCal — Hab. {roomMap[connections.find(c => c.id === previewId)?.roomId ?? '']?.roomNumber ?? '?'}
+              </span>
+            </div>
+            <button onClick={() => { setPreviewId(null); setPreviewData(null); }} className="text-muted hover:text-white press">
+              <X size={13} />
+            </button>
+          </div>
+
+          {previewing === previewId ? (
+            <div className="px-4 py-6 text-center text-xs text-muted animate-pulse">Analizando feed iCal...</div>
+          ) : previewData ? (
+            <div className="p-4 space-y-4 text-xs">
+              {/* Meta */}
+              <div className="flex flex-wrap gap-4 text-muted">
+                <span>Hoy (UTC): <span className="text-white font-mono">{previewData.today}</span></span>
+                <span>Feed: <span className="text-white font-mono truncate max-w-[300px] inline-block align-bottom">{previewData.feedUrl}</span></span>
+                {previewData.fetchStatus === 'error' && (
+                  <span className="text-[#f87171]">Error fetch: {previewData.fetchError}</span>
+                )}
+              </div>
+
+              {/* Events in feed */}
+              <div>
+                <p className="text-[10px] text-muted uppercase tracking-wider mb-2">Eventos en el feed ({previewData.events.length})</p>
+                {previewData.events.length === 0 ? (
+                  <p className="text-[#f87171] italic">⚠ El feed está vacío o no contiene VEVENT válidos</p>
+                ) : (
+                  <div className="space-y-1">
+                    {previewData.events.map((ev, i) => (
+                      <div key={i} className="flex items-start gap-3 font-mono bg-[#080f1a] rounded px-3 py-2">
+                        <span className={`flex-shrink-0 font-bold ${ACTION_COLORS[ev.action]}`}>{ACTION_LABELS[ev.action]}</span>
+                        <div className="min-w-0">
+                          <div className="text-white truncate">{ev.checkIn} → {ev.checkOut}</div>
+                          <div className="text-muted truncate">{ev.summary || '(sin summary)'}</div>
+                          <div className="text-[#64748b] truncate text-[10px]">UID: {ev.uid}</div>
+                          {ev.action.startsWith('skip') && <div className="text-[#fb923c] text-[10px]">Razón: {ev.reason}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* DB reservations */}
+              <div>
+                <p className="text-[10px] text-muted uppercase tracking-wider mb-2">Reservas en BD para esta hab. ({previewData.dbReservations.length})</p>
+                {previewData.dbReservations.length === 0 ? (
+                  <p className="text-muted italic">Sin reservas en BD para esta habitación</p>
+                ) : (
+                  <div className="space-y-1">
+                    {previewData.dbReservations.map((r) => (
+                      <div key={r.id} className={`flex items-center gap-3 font-mono rounded px-3 py-1.5 ${r.deletedAt ? 'bg-[#f871710a] opacity-60' : 'bg-[#080f1a]'}`}>
+                        <span className={r.deletedAt ? 'text-[#f87171]' : 'text-primary'}>
+                          {r.deletedAt ? '✗ ELIMINADA' : '✓ ACTIVA'}
+                        </span>
+                        <span className="text-white">{r.checkIn} → {r.checkOut}</span>
+                        <span className="text-muted">[{r.status}]</span>
+                        {r.channelReservationId && <span className="text-[#64748b] text-[10px] truncate">UID: {r.channelReservationId}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {/* Add connection form */}
       {!showForm ? (

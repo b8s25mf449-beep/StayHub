@@ -6,6 +6,7 @@ import { useProperty } from '@/lib/property-context';
 import { useAuth } from '@/lib/auth';
 import api from '@/lib/api';
 import PropertyModal from '@/components/properties/PropertyModal';
+import RoomTypesSection from '@/components/properties/RoomTypesSection';
 import type { Property } from '@/types';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -101,57 +102,61 @@ export default function PropertiesPage() {
           {properties.map((p) => (
             <div
               key={p.id}
-              className={`bg-surface border rounded-xl p-4 flex items-center gap-4 transition-colors ${
+              className={`bg-surface border rounded-xl p-4 transition-colors ${
                 activeProperty?.id === p.id ? 'border-primary/50' : 'border-border'
               }`}
             >
-              <div className="w-10 h-10 rounded-lg bg-[#0f766e22] flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
-                {p.name.slice(0, 2).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium truncate">{p.name}</p>
-                  {activeProperty?.id === p.id && (
-                    <span className="text-[10px] bg-[#0f766e22] text-primary px-2 py-0.5 rounded-full font-medium flex-shrink-0">
-                      Activa
-                    </span>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-[#0f766e22] flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
+                  {p.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium truncate">{p.name}</p>
+                    {activeProperty?.id === p.id && (
+                      <span className="text-[10px] bg-[#0f766e22] text-primary px-2 py-0.5 rounded-full font-medium flex-shrink-0">
+                        Activa
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted mt-0.5">
+                    {TYPE_LABELS[p.type] ?? p.type}
+                    {p.city ? ` · ${p.city}` : ''}
+                    {p.country ? `, ${p.country}` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {activeProperty?.id !== p.id && (
+                    <button
+                      onClick={() => switchProperty(p.id)}
+                      className="text-xs text-primary hover:underline px-2 py-1 press"
+                    >
+                      Activar
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => { setEditingProperty(p); setShowModal(true); }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-white hover:bg-[#ffffff08] press"
+                      title="Editar"
+                    >
+                      <Edit2 size={13} />
+                    </button>
+                  )}
+                  {isSuperAdmin && (
+                    <button
+                      onClick={() => handleDelete(p.id)}
+                      disabled={deletingId === p.id}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-[#f87171] hover:bg-[#f87171]/10 press disabled:opacity-50"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   )}
                 </div>
-                <p className="text-xs text-muted mt-0.5">
-                  {TYPE_LABELS[p.type] ?? p.type}
-                  {p.city ? ` · ${p.city}` : ''}
-                  {p.country ? `, ${p.country}` : ''}
-                </p>
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                {activeProperty?.id !== p.id && (
-                  <button
-                    onClick={() => switchProperty(p.id)}
-                    className="text-xs text-primary hover:underline px-2 py-1 press"
-                  >
-                    Activar
-                  </button>
-                )}
-                {isAdmin && (
-                  <button
-                    onClick={() => { setEditingProperty(p); setShowModal(true); }}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-white hover:bg-[#ffffff08] press"
-                    title="Editar"
-                  >
-                    <Edit2 size={13} />
-                  </button>
-                )}
-                {isSuperAdmin && (
-                  <button
-                    onClick={() => handleDelete(p.id)}
-                    disabled={deletingId === p.id}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-[#f87171] hover:bg-[#f87171]/10 press disabled:opacity-50"
-                    title="Eliminar"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                )}
-              </div>
+
+              {isAdmin && <RoomTypesSection propertyId={p.id} />}
             </div>
           ))}
         </div>

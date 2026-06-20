@@ -99,9 +99,11 @@ export default function PropertyModal({ property, onClose, onSaved }: Props) {
   const labelClass = 'text-xs text-muted uppercase tracking-wider block mb-1.5';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-black/60 animate-fade-in" onClick={onClose} />
+      <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
       <div
-        className="bg-surface border border-border rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-fade-in"
+        className="relative bg-surface border border-border rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-modal-in pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-5 border-b border-border">
@@ -202,6 +204,7 @@ export default function PropertyModal({ property, onClose, onSaved }: Props) {
             </button>
           </div>
         </form>
+      </div>
       </div>
     </div>
   );

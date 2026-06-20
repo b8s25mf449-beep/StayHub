@@ -152,31 +152,37 @@ export class ICalImportService {
       const email = this.extractEmail(component);
 
       try {
-        // Use TRIM() in SQL so we match records whose channelReservationId was
-        // stored with surrounding whitespace by a previous buggy sync. The global
-        // dedup pass above normalizes them going forward, but using TRIM here
-        // ensures correctness even on the very first sync after the fix.
-        const existingList = await this.reservationRepo
+        // Search including soft-deleted so we can restore them if the UID is back in the feed.
+        // This handles the case where stale cleanup removed the record but the OTA brought it back.
+        const allMatchingList = await this.reservationRepo
           .createQueryBuilder('r')
           .where('r.tenant_id = :tenantId', { tenantId: connection.tenantId })
           .andWhere('r.room_id = :roomId', { roomId: connection.roomId })
           .andWhere('TRIM(r.channel_reservation_id) = :uid', { uid })
-          .andWhere('r.deleted_at IS NULL')
-          .orderBy('r.created_at', 'DESC')
+          .withDeleted()
+          .orderBy('r.deleted_at', 'ASC', 'NULLS FIRST') // active records first
+          .addOrderBy('r.created_at', 'DESC')
           .getMany();
 
+        // Restore any soft-deleted matches back to active
+        for (const r of allMatchingList.filter((r) => r.deletedAt)) {
+          await this.reservationRepo.restore(r.id);
+          r.deletedAt = null as any;
+        }
+
+        const activeList = allMatchingList.filter((r) => !r.deletedAt);
+
         // Deduplicate: keep the most recently created, soft-delete the rest
-        if (existingList.length > 1) {
-          for (const dup of existingList.slice(1)) {
+        if (activeList.length > 1) {
+          for (const dup of activeList.slice(1)) {
             await this.reservationRepo.softDelete(dup.id);
           }
         }
 
-        const existing = existingList[0];
+        const existing = activeList[0];
 
         if (existing) {
           let changed = false;
-          // Normalize stored UID in case it was found via TRIM() match
           if (existing.channelReservationId !== uid) {
             existing.channelReservationId = uid;
             changed = true;
@@ -266,7 +272,139 @@ export class ICalImportService {
     return result;
   }
 
-  private toDateString(d: Date): string {
+  async previewConnection(connection: ChannelConnection): Promise<{
+    feedUrl: string;
+    today: string;
+    fetchStatus: 'ok' | 'error';
+    fetchError?: string;
+    events: Array<{
+      uid: string;
+      summary: string;
+      checkIn: string;
+      checkOut: string;
+      action: 'import' | 'update' | 'skip_past' | 'skip_blocked' | 'skip_missing_fields' | 'in_db';
+      reason: string;
+      existsInDb: boolean;
+    }>;
+    dbReservations: Array<{
+      id: string;
+      channelReservationId: string | null;
+      checkIn: string;
+      checkOut: string;
+      status: string;
+      deletedAt: Date | null;
+    }>;
+  }> {
+    const today = new Date().toISOString().split('T')[0];
+    const result: Awaited<ReturnType<typeof this.previewConnection>> = {
+      feedUrl: connection.icalUrl.replace(/ics=.*/, 'ics=***'),
+      today,
+      fetchStatus: 'ok',
+      events: [],
+      dbReservations: [],
+    };
+
+    // Load ALL db reservations for this room (including soft-deleted) for context
+    const allDbRes = await this.reservationRepo
+      .createQueryBuilder('r')
+      .where('r.room_id = :roomId', { roomId: connection.roomId })
+      .andWhere('r.tenant_id = :tenantId', { tenantId: connection.tenantId })
+      .orderBy('r.check_in_date', 'ASC')
+      .withDeleted()
+      .getMany();
+
+    result.dbReservations = allDbRes.map((r) => ({
+      id: r.id,
+      channelReservationId: r.channelReservationId ?? null,
+      checkIn: r.checkInDate,
+      checkOut: r.checkOutDate,
+      status: r.status,
+      deletedAt: r.deletedAt ?? null,
+    }));
+
+    const dbUids = new Set(allDbRes.filter((r) => !r.deletedAt).map((r) => r.channelReservationId?.trim()).filter(Boolean));
+
+    let icsString: string;
+    try {
+      const response = await axios.get<string>(connection.icalUrl, {
+        timeout: 15000, responseType: 'text', maxRedirects: 5,
+      });
+      icsString = response.data;
+    } catch (err: any) {
+      result.fetchStatus = 'error';
+      result.fetchError = err.message;
+      return result;
+    }
+
+    let events: ical.CalendarResponse;
+    try { events = ical.parseICS(icsString); }
+    catch (err: any) {
+      result.fetchStatus = 'error';
+      result.fetchError = `Parse error: ${err.message}`;
+      return result;
+    }
+
+    for (const key of Object.keys(events)) {
+      const component = events[key] as ical.VEvent;
+      if (component.type !== 'VEVENT') continue;
+
+      const uid = (component.uid ?? '').trim();
+      const start = component.start as Date | undefined;
+      const end   = component.end as Date | undefined;
+
+      if (!uid || !start || !end) {
+        result.events.push({
+          uid: uid || key, summary: String(component.summary ?? ''),
+          checkIn: '', checkOut: '',
+          action: 'skip_missing_fields', reason: 'Missing uid, dtstart, or dtend',
+          existsInDb: false,
+        });
+        continue;
+      }
+
+      const checkIn  = this.toDateString(start);
+      const checkOut = this.toDateString(end);
+      const rawSummary = component.summary as string | { val: string } | undefined;
+      const summaryStr = rawSummary && typeof rawSummary === 'object' ? (rawSummary as { val: string }).val : (rawSummary ?? '');
+
+      if (checkOut < today) {
+        result.events.push({
+          uid, summary: summaryStr, checkIn, checkOut,
+          action: 'skip_past', reason: `checkout ${checkOut} < today ${today}`,
+          existsInDb: dbUids.has(uid),
+        });
+        continue;
+      }
+
+      if (/^(CLOSED|BLOCKED|UNAVAILABLE|NO DISPONIBLE)/i.test(summaryStr.trim())) {
+        result.events.push({
+          uid, summary: summaryStr, checkIn, checkOut,
+          action: 'skip_blocked', reason: 'Summary matches blocked pattern',
+          existsInDb: dbUids.has(uid),
+        });
+        continue;
+      }
+
+      const existsInDb = dbUids.has(uid);
+      result.events.push({
+        uid, summary: summaryStr, checkIn, checkOut,
+        action: existsInDb ? 'in_db' : 'import',
+        reason: existsInDb ? 'Already in DB' : 'Would be imported as new reservation',
+        existsInDb,
+      });
+    }
+
+    return result;
+  }
+
+  private toDateString(d: Date | string): string {
+    // Handles both Date objects and ISO string values (node-ical can return either
+    // depending on the iCal format — DATE vs DATETIME).
+    if (typeof d === 'string') {
+      // If it's already YYYY-MM-DD, return as-is; otherwise parse
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+      return new Date(d).toISOString().split('T')[0];
+    }
     // iCal all-day dates are midnight UTC — always extract the UTC date
     // to avoid timezone-shift bugs (e.g. UTC-6 would make June 13 → June 12)
     return d.toISOString().split('T')[0];

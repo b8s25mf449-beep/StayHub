@@ -24,7 +24,12 @@ export class ChannelConnectionsService {
     if (!room) throw new ForbiddenException('Room not found in this tenant/property');
 
     const connection = this.repo.create({ ...dto, tenantId });
-    return this.repo.save(connection);
+    const saved = await this.repo.save(connection);
+
+    // Auto-sync immediately so reservations appear right after the connection is configured
+    this.icalImportService.importFromConnection(saved).catch(() => { /* errors stored in lastError */ });
+
+    return saved;
   }
 
   async findAll(
@@ -82,5 +87,21 @@ export class ChannelConnectionsService {
         : { error: (r.reason as Error)?.message ?? 'Unknown error' };
     });
     return out;
+  }
+
+  async previewConnection(tenantId: string, id: string) {
+    const connection = await this.findOne(tenantId, id);
+    return this.icalImportService.previewConnection(connection);
+  }
+
+  async syncAllTenants(): Promise<{ total: number; synced: number; errors: number }> {
+    const connections = await this.repo.find({ where: { deletedAt: IsNull() } });
+
+    const results = await Promise.allSettled(
+      connections.map((c) => this.icalImportService.importFromConnection(c)),
+    );
+
+    const errors = results.filter((r) => r.status === 'rejected').length;
+    return { total: connections.length, synced: connections.length - errors, errors };
   }
 }

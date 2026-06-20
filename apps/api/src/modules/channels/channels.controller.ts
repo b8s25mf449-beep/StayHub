@@ -1,12 +1,14 @@
 import {
   Controller, Get, Post, Patch, Delete,
   Body, Param, Query, HttpCode, HttpStatus,
+  Headers, UnauthorizedException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ChannelConnectionsService } from './channels.service';
 import { CreateChannelConnectionDto } from './dto/create-channel-connection.dto';
 import { UpdateChannelConnectionDto } from './dto/update-channel-connection.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { JwtPayload } from '../auth/services/auth.service';
 
 @ApiTags('Channels')
@@ -60,6 +62,24 @@ export class ChannelsController {
   @ApiOperation({ summary: 'Sync all channel connections for this tenant in parallel' })
   syncAll(@CurrentUser() user: JwtPayload) {
     return this.service.syncAll(user.tenantId);
+  }
+
+  @Public()
+  @Post('cron-sync')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Vercel cron: sync all iCal connections across all tenants' })
+  cronSync(@Headers('authorization') auth: string) {
+    const secret = process.env.CRON_SECRET;
+    if (!secret || auth !== `Bearer ${secret}`) {
+      throw new UnauthorizedException('Invalid cron secret');
+    }
+    return this.service.syncAllTenants();
+  }
+
+  @Get(':id/preview')
+  @ApiOperation({ summary: 'Preview iCal feed for a connection — dry run, no DB changes' })
+  preview(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.service.previewConnection(user.tenantId, id);
   }
 
   @Post(':id/sync')

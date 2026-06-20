@@ -14,5 +14,11 @@
       "src": "/(.*)",
       "dest": "src/serverless.ts"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/v1/channels/cron-sync",
+      "schedule": "0 */4 * * *"
+    }
   ]
 }
