@@ -117,11 +117,11 @@ export class ICalImportService {
       if (component.type !== 'VEVENT') continue;
 
       const rawUid = component.uid;
-      const uid    = rawUid?.trim() ?? '';          // normalize once — used everywhere below
+      const uid    = rawUid?.trim() ?? '';
       const start  = component.start as Date | undefined;
       const end    = component.end as Date | undefined;
 
-      // Always register the UID in the feed set so cleanup never deletes it
+      // Always register the UID before any skip so stale cleanup never wrongly deletes it
       if (uid) feedUids.add(uid);
 
       if (!uid || !start || !end) {
@@ -130,10 +130,28 @@ export class ICalImportService {
         continue;
       }
 
-      const checkInDate = this.toDateString(start);
+      const checkInDate  = this.toDateString(start);
       const checkOutDate = this.toDateString(end);
 
-      // Skip reservations that already checked out before today (don't upsert, but UID stays in feedUids)
+      // Handle STATUS:CANCELLED — Octorate marks cancelled bookings this way instead of
+      // removing the VEVENT from the feed. Soft-delete the matching DB record if found.
+      const eventStatus = ((component as any).status ?? '').toString().toUpperCase();
+      if (eventStatus === 'CANCELLED') {
+        const cancelledList = await this.reservationRepo
+          .createQueryBuilder('r')
+          .where('r.tenant_id = :tenantId', { tenantId: connection.tenantId })
+          .andWhere('r.room_id = :roomId', { roomId: connection.roomId })
+          .andWhere('TRIM(r.channel_reservation_id) = :uid', { uid })
+          .andWhere('r.deleted_at IS NULL')
+          .getMany();
+        for (const r of cancelledList) {
+          await this.reservationRepo.softDelete(r.id);
+        }
+        result.skipped++;
+        continue;
+      }
+
+      // Skip reservations that already checked out before today (UID stays in feedUids)
       if (checkOutDate < today) {
         result.skipped++;
         continue;
@@ -142,8 +160,8 @@ export class ICalImportService {
       const rawSummary = component.summary as string | { val: string; params?: Record<string, string> } | undefined;
       const summaryStr = rawSummary && typeof rawSummary === 'object' ? rawSummary.val : (rawSummary ?? '');
 
-      // Skip blocked dates (no guest) — still tracked in feedUids
-      if (/^(CLOSED|BLOCKED|UNAVAILABLE|NO DISPONIBLE)/i.test(summaryStr.trim())) {
+      // Skip blocked / maintenance dates — UID already in feedUids so stale cleanup is safe
+      if (/^(CLOSED|BLOCKED|UNAVAILABLE|NO DISPONIBLE|BLOQUEADO|MANTENIMIENTO|NOT AVAILABLE)/i.test(summaryStr.trim())) {
         result.skipped++;
         continue;
       }
@@ -247,6 +265,13 @@ export class ICalImportService {
     // (checkInDate > today) so we never delete a guest who already arrived — Octorate drops
     // past events from the feed, but that doesn't mean the stay was cancelled.
     if (feedUids.size > 0) {
+      // Double protection: only delete if BOTH check_in is in the future AND check_out is
+      // after tomorrow. This ensures we never touch a guest who is currently in-house even
+      // if Octorate drops their UID from the feed mid-stay.
+      const tomorrow = new Date();
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
       const stale = await this.reservationRepo
         .createQueryBuilder('r')
         .where('r.tenant_id = :tenantId', { tenantId: connection.tenantId })
@@ -255,7 +280,8 @@ export class ICalImportService {
         .andWhere('r.channel_reservation_id IS NOT NULL')
         .andWhere('r.channel_reservation_id NOT IN (:...uids)', { uids: [...feedUids] })
         .andWhere('r.status IN (:...statuses)', { statuses: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] })
-        .andWhere('r.check_in_date > :today', { today })   // ← never touch past/current stays
+        .andWhere('r.check_in_date > :today', { today })        // not yet started
+        .andWhere('r.check_out_date > :tomorrowStr', { tomorrowStr }) // extra buffer: checking out 2+ days from now
         .getMany();
 
       for (const r of stale) {
